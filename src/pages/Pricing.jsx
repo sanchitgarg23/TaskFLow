@@ -368,7 +368,7 @@ const Pricing = () => {
             <div className="pricing-perks">
               <div className="perk-item">
                 <CheckCircle className="icon" />
-                Free 14-day trial
+                <p classname ="color">Free 14-day trial</p>
               </div>
               <div className="perk-item">
                 <CheckCircle className="icon" />

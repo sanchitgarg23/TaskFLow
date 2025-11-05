@@ -93,6 +93,7 @@ const CalendarPage = () => {
   };
 
   const filteredEvents = events.filter(event => {
+    if (!event || !event.title) return false;
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           (event.description && event.description.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesFilter = filterType === 'all' || event.type === filterType;

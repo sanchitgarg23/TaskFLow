@@ -1,14 +1,13 @@
-/* General Page Styling */
+
 .pricing-page-container {
   padding-top: 5rem;
   background-color: #fff;
   color: #111827;
 }
 
-/*  Hero Section */
 .pricing-hero-section {
   padding: 5rem 0;
-  background: linear-gradient(135deg, #f0f4ff, #fdf2f8);
+  background: rgb(246, 241, 241);
 }
 
 .pricing-hero-content {
@@ -26,7 +25,7 @@
 }
 
 .pricing-hero-gradient-text {
-  background: linear-gradient(to right, #2563eb, #7c3aed);
+  background: rgb(246, 241, 241);
   color: transparent;
 }
 
@@ -49,6 +48,7 @@
 .perk-item {
   display: flex;
   align-items: center;
+  color:black;
 }
 
 .perk-item .icon {
@@ -57,7 +57,9 @@
   height: 1rem;
   width: 1rem;
 }
-
+.color{
+  color:black;
+}
 /* Pricing Cards Section */
 .pricing-plans-section {
   padding: 5rem 1rem;
@@ -97,7 +99,7 @@
 
 .pricing-card.popular {
   border-color: #3b82f6;
-  background: linear-gradient(to bottom right, #f0f9ff, #faf5ff);
+background: rgb(246, 241, 241);
   box-shadow: 0 15px 25px rgba(0, 0, 0, 0.08);
 }
 
@@ -106,8 +108,8 @@
   top: -0.75rem;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(to right, #2563eb, #7c3aed);
-  color: #fff;
+  background: rgb(246, 241, 241);
+  color: black;
   padding: 0.25rem 0.75rem;
   border-radius: 10000px;
   font-size: 0.75rem;
@@ -207,13 +209,13 @@
 }
 
 .plan-cta-button.popular {
-  background: linear-gradient(to right, #2563eb, #7c3aed);
+  background: rgb(246, 241, 241);
   color: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .plan-cta-button.popular:hover {
-  background: linear-gradient(to right, #1e40af, #6b21a8);
+  background: rgb(246, 241, 241);
 }
 
 /*  FAQ Section  */
@@ -269,7 +271,7 @@
 /*  Final CTA */
 .final-cta-section {
   padding: 5rem 1rem;
-  background: linear-gradient(to right, #2563eb, #7c3aed);
+  background: rgb(246, 241, 241);
   text-align: center;
 }
 
@@ -280,14 +282,14 @@
 
 .final-cta-title {
   font-size: 1.875rem;
-  color: #fff;
+  color: black;
   font-weight: 700;
   margin-bottom: 1rem;
 }
 
 .final-cta-subtitle {
   font-size: 1.125rem;
-  color: #dbeafe;
+  color: black;
   max-width: 40rem;
   margin: 0 auto 2rem;
 }
