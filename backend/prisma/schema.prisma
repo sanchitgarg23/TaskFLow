@@ -12,15 +12,33 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+model User {
+  id                  Int       @id @default(autoincrement())
+  firstName           String
+  lastName            String
+  email               String    @unique
+  password            String
+  phoneNumber         String?
+  profilePicture      String?
+  dateOfBirth         DateTime?
+  gender              String?
+  address             String?
+  company             String?              // 👈 add this
+  subscribeNewsletter Boolean   @default(false) // 👈 add this
+  createdAt           DateTime  @default(now())
+  events              Event[]
+}
 
 model Event {
   id          Int      @id @default(autoincrement())
   title       String
-  description String?  @db.Text       // ✅ Optional, can be long text
+  description String?  @db.Text       
   startDate   DateTime
   endDate     DateTime
-  type        String   @default("task")  // ✅ Default value
-  color       String   @default("#3B82F6")  // ✅ Default blue color
-  allDay      Boolean  @default(false)  // ✅ Already has default
+  type        String   @default("task")  
+  color       String   @default("#3B82F6")  
+  allDay      Boolean  @default(false)  
   createdAt   DateTime @default(now())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
 }

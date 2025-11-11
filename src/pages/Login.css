@@ -223,7 +223,7 @@
 /* Submit Button */
 .submit-button {
     width: 100%; /* w-full */
-    background: linear-gradient(to right, #2563eb, #9333ea); /* bg-gradient-to-r from-blue-600 to-purple-600 */
+  background: rgb(246, 241, 241);
     color: #fff; /* text-white */
     padding-top: 0.75rem; /* py-3 */
     padding-bottom: 0.75rem; /* py-3 */
@@ -236,7 +236,7 @@
 }
 
 .submit-button:hover {
-    background: linear-gradient(to right, #1d4ed8, #7e22ce); /* hover:from-blue-700 hover:to-purple-700 */
+    background: rgb(106, 106, 212);
     transform: scale(1.05); /* hover:scale-105 */
 }
 

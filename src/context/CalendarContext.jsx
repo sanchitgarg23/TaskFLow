@@ -83,10 +83,10 @@ export const CalendarProvider = ({ children }) => {
   };
 
   // Update existing event
-  const updateEvent = async (eventId, updates) => {
-  try {
-    // Convert dates to ISO string format before sending
-    const dataToSend = {
+    const updateEvent = async (eventId, updates) => {
+    try {
+      // Convert dates to ISO string format before sending
+      const dataToSend = {
       title: updates.title,
       description: updates.description || null,
       startDate: updates.startDate ? updates.startDate.toISOString() : undefined,

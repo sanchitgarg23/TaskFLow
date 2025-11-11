@@ -22,13 +22,25 @@ const Login = () => {
       [name]: type === 'checkbox' ? checked : value,
     });
   };
+ // here i did change s for the login connectivity with backend
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const res = await fetch("http://localhost:5001/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    localStorage.setItem("token", data.token);
+    alert("Login successful!");
+    navigate("/homepage");
+  } catch (err) {
+    alert(err.message);
+  }
+};
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle login logic here
-    console.log('Login attempt:', formData);
-    navigate('/homepage');
-  };
 
   return (
     <>

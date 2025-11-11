@@ -28,11 +28,25 @@ const Signup = () => {
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle signup logic here
-    console.log('Signup attempt:', formData);
-  };
+
+  // here i did change s for the signup  or signup connectivity with backend
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const res = await fetch("http://localhost:5001/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    alert("Signup successful! Please login.");
+    navigate("/login");
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
 
   const passwordStrength = (password) => {
     let strength = 0;

@@ -276,8 +276,8 @@
 /* Submit Button */
 .submit-button {
     width: 100%; /* w-full */
-    background: linear-gradient(to right, #2563eb, #9333ea); /* bg-gradient-to-r from-blue-600 to-purple-600 */
-    color: #fff; /* text-white */
+  background: rgb(246, 241, 241);
+    color: black; /* text-white */
     padding-top: 0.75rem; /* py-3 */
     padding-bottom: 0.75rem; /* py-3 */
     border-radius: 0.5rem; /* rounded-lg */
@@ -289,7 +289,7 @@
 }
 
 .submit-button:hover:not(:disabled) {
-    background: linear-gradient(to right, #1d4ed8, #7e22ce); /* hover:from-blue-700 hover:to-purple-700 */
+  background: rgb(29, 29, 234);
     transform: scale(1.05); /* hover:scale-105 */
 }
 
