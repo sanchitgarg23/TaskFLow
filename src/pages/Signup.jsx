@@ -39,7 +39,10 @@ const Signup = () => {
       body: JSON.stringify(formData),
     });
     const data = await res.json();
+    
     if (!res.ok) throw new Error(data.error);
+    // localStorage.setItem("token", data.token);
+    // navigate()  if we want to directly go to dashboard inspite of going to login page
     alert("Signup successful! Please login.");
     navigate("/login");
   } catch (err) {

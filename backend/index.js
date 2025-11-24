@@ -9,6 +9,9 @@ import authMiddleware from "./middleware/auth.js";
 const prisma = new PrismaClient();
 const app = express();
 
+
+
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -31,17 +34,30 @@ app.get("/api/events", async (req, res) => {
 });
 
 
-
-// Add a new event
+// to create
 app.post("/api/events", async (req, res) => {
-  const { title, description, type, color, startDate, endDate } = req.body;
+  const { title, description, type, color, startDate, endDate, allDay, userId } = req.body;
+  // ✅ Added allDay
+  
   try {
-    console.log("📥 Received event data:", JSON.stringify(req.body, null, 2));
-    const event = await prisma.event.create({ data: req.body });
+    console.log("Received event data:", JSON.stringify(req.body, null, 2));
+
+    const event = await prisma.event.create({
+      data: {
+        title,
+        description,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        type,
+        color,
+        allDay, // ✅ Added allDay
+        userId
+      },
+    });
     res.status(201).json(event);
   } catch (err) {
     console.error(err);
-    res.status(400).json({ error: "Failed to create event" });
+    res.status(400).json({ error: "Failed to create event", details: err.message });
   }
 });
 
@@ -79,26 +95,78 @@ app.delete("/api/events/:id", async (req, res) => {
   }
 });
 
+// Add this new route after your existing event routes
+
+// Get events by type (for filtering)
+app.get("/api/events/type/:type", async (req, res) => {
+  try {
+    const { type } = req.params;
+    
+    let events;
+    if (type === 'all') {
+      events = await prisma.event.findMany();
+    } else {
+      events = await prisma.event.findMany({
+        where: { type: type }
+      });
+    }
+    
+    res.json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch events by type" });
+  }
+});
+
+
+// this i made for filtering the events by user and type like deadline , task , etc.
+// Get events by user and type (if you want user-specific filtering)
+app.get("/api/events/user/:userId/type/:type", async (req, res) => {
+  try {
+    const { userId, type } = req.params;
+    
+    let events;
+    if (type === 'all') {
+      events = await prisma.event.findMany({
+        where: { userId: parseInt(userId) }
+      });
+    } else {
+      events = await prisma.event.findMany({
+        where: { 
+          userId: parseInt(userId),
+          type: type 
+        }
+      });
+    }
+    
+    res.json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch user events by type" });
+  }
+});
+
 
 // signup 
-
 app.post("/api/auth/signup", async (req, res) => {
   try {
     const { firstName, lastName, email, company, password, subscribeNewsletter } = req.body;
 
-
+    // Validate required fields
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ error: "Please fill all required fields" });
     }
 
-
+    // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) return res.status(409).json({ error: "Email already registered" });
+    if (existingUser) {
+      return res.status(409).json({ error: "Email already registered" });
+    }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-
+    // Create user
     const user = await prisma.user.create({
       data: {
         firstName,
@@ -110,8 +178,16 @@ app.post("/api/auth/signup", async (req, res) => {
       },
     });
 
+    // Generate token (uncommented and fixed)
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET || "mysecretkey",
+      { expiresIn: "7d" }
+    );
+
     res.status(201).json({
       message: "Account created successfully",
+      token: token, // Fixed: now token is properly defined
       user: {
         id: user.id,
         email: user.email,
@@ -120,6 +196,7 @@ app.post("/api/auth/signup", async (req, res) => {
       },
     });
   } catch (err) {
+    console.error("Signup error:", err); 
     res.status(500).json({ error: "Server error during signup" });
   }
 });

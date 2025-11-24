@@ -13,7 +13,7 @@ import { useBoards } from '../context/BoardContext';
 
 const CalendarPage = () => {
   const navigate = useNavigate();
-  const { events, createEvent, updateEvent, deleteEvent, getEventsByDate } = useCalendar();
+  const { events, createEvent, updateEvent, deleteEvent, getEventsByDate,fetchEventsByType } = useCalendar();
   const { createBoard } = useBoards();
 
 // currentView stores the current calendar view type (month, week, or day) and the date the view is focused on. Defaults to the current date and month view
@@ -92,13 +92,15 @@ const CalendarPage = () => {
     setEditingEvent(null);
   };
 
-  const filteredEvents = events.filter(event => {
-    if (!event || !event.title) return false;
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (event.description && event.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesFilter = filterType === 'all' || event.type === filterType;
-    return matchesSearch && matchesFilter;
-  });
+
+// this will be removed later when we will be using the backend filtering
+  // const filteredEvents = events.filter(event => {
+  //   if (!event || !event.title) return false;
+  //   const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //                         (event.description && event.description.toLowerCase().includes(searchQuery.toLowerCase()));
+  //   const matchesFilter = filterType === 'all' || event.type === filterType;
+  //   return matchesSearch && matchesFilter;
+  // });
 
   const todayEvents = getEventsByDate(new Date());
   const selectedDateEvents = selectedDate ? getEventsByDate(selectedDate) : [];
@@ -107,6 +109,19 @@ const CalendarPage = () => {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
+
+
+
+  // this is for filtering the events by type like deadline , task , etc.
+
+  const handleFilterChange = async (newFilterType) => {
+    setFilterType(newFilterType);
+    
+    // Fetch events from backend based on filter
+    if (newFilterType !== filterType) {
+      await fetchEventsByType(newFilterType);
+    }
+  };
 
   return (
     <div className="calendar-page-container">
@@ -193,7 +208,7 @@ const CalendarPage = () => {
             
             <select
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
+              onChange={(e) => handleFilterChange(e.target.value)}
               className="filter-select"
             >
               <option value="all">All Events</option>
@@ -211,7 +226,8 @@ const CalendarPage = () => {
           <div className="calendar-grid-container">
             <CalendarGrid
               view={currentView}
-              events={filteredEvents}
+              // events={filteredEvents} now we will be using the backend filtering
+              events={events}
               onDateClick={handleDateClick}
               onEventClick={handleEditEvent}
               selectedDate={selectedDate}

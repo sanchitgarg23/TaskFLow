@@ -1,27 +1,27 @@
-/* CalendarPage.css */
+
 
 .calendar-page-container {
   min-height: 100vh;
-  background-color: #f9fafb; /* bg-gray-50 */
+  background-color: #f9fafb;
 }
 
 .page-content {
-  max-width: 1280px; /* max-w-7xl */
+  max-width: 1280px;
   margin-left: auto;
   margin-right: auto;
-  padding: 1.5rem 1rem; /* py-6 px-4 */
+  padding: 1.5rem 1rem; 
 }
 
 /* Responsive Padding */
 @media (min-width: 640px) {
   .page-content {
-    padding-left: 1.5rem; /* sm:px-6 */
+    padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
 }
 @media (min-width: 1024px) {
   .page-content {
-    padding-left: 2rem; /* lg:px-8 */
+    padding-left: 2rem; 
     padding-right: 2rem;
   }
 }
@@ -32,7 +32,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem; /* mb-6 */
+  margin-bottom: 1.5rem; 
 }
 
 .header-left,
