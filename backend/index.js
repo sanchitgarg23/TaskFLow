@@ -25,7 +25,19 @@ app.get("/", (req, res) => {
 
 app.get("/api/events", async (req, res) => {
   try {
-    const events = await prisma.event.findMany();
+    const { userId } = req.query; // Get userId from query params
+    
+    const whereClause = {};
+    
+    // Only filter by userId if provided
+    if (userId) {
+      whereClause.userId = parseInt(userId);
+    }
+    
+    const events = await prisma.event.findMany({
+      where: whereClause
+    });
+    
     res.json(events);
   } catch (err) {
     console.error(err);
@@ -119,7 +131,7 @@ app.get("/api/events/type/:type", async (req, res) => {
 });
 
 
-// this i made for filtering the events by user and type like deadline , task , etc.
+// this i made for filtering the events by user and type like deadline , task , etc in calander page.
 // Get events by user and type (if you want user-specific filtering)
 app.get("/api/events/user/:userId/type/:type", async (req, res) => {
   try {
@@ -247,6 +259,44 @@ app.get("/api/protected", authMiddleware, (req, res) => {
 });
 
 
+
+// now this will be for search in calander page
+app.get("/api/events/search", async (req, res) => {
+  try {
+    const { q, type, userId } = req.query;
+    
+    // Build the where clause
+    const whereClause = {};
+    
+    // Remove mode: 'insensitive' - MySQL doesn't support it
+    if (q && q.trim()) {
+      whereClause.OR = [
+        { title: { contains: q.trim() } },
+        { description: { contains: q.trim() } }
+      ];
+    }
+    
+    // Add type filter if provided
+    if (type && type !== 'all') {
+      whereClause.type = type;
+    }
+    
+    // Add user filter if provided
+    if (userId) {
+      whereClause.userId = parseInt(userId);
+    }
+    
+    const events = await prisma.event.findMany({
+      where: whereClause,
+      orderBy: { startDate: 'asc' }
+    });
+    
+    res.json(events);
+  } catch (err) {
+    console.error("Search error:", err);
+    res.status(500).json({ error: "Failed to search events" });
+  }
+});
 
 
 const PORT = 5001;

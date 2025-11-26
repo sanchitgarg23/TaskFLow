@@ -13,7 +13,7 @@ import { useBoards } from '../context/BoardContext';
 
 const CalendarPage = () => {
   const navigate = useNavigate();
-  const { events, createEvent, updateEvent, deleteEvent, getEventsByDate,fetchEventsByType } = useCalendar();
+  const { events, createEvent, updateEvent, deleteEvent, getEventsByDate,fetchEventsByType ,searchEvents} = useCalendar();
   const { createBoard } = useBoards();
 
 // currentView stores the current calendar view type (month, week, or day) and the date the view is focused on. Defaults to the current date and month view
@@ -118,11 +118,27 @@ const CalendarPage = () => {
     setFilterType(newFilterType);
     
     // Fetch events from backend based on filter
-    if (newFilterType !== filterType) {
+    // if (newFilterType !== filterType) {
+    //   await fetchEventsByType(newFilterType);
+    // }
+    if (searchQuery && searchQuery.trim()) {
+      await searchEvents(searchQuery,newFilterType);
+    } else {
       await fetchEventsByType(newFilterType);
     }
   };
 
+
+  const handleSearch = async (query) => {
+    setSearchQuery(query);
+    
+
+    if (query && query.trim()) {
+      await searchEvents(query, filterType);
+    } else {
+      await fetchEventsByType(filterType);
+    }
+  };
   return (
     <div className="calendar-page-container">
       <Navbar1
@@ -200,7 +216,7 @@ const CalendarPage = () => {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
                 placeholder="Search events..."
                 className="search-input"
               />

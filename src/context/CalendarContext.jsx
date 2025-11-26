@@ -220,6 +220,41 @@ export const CalendarProvider = ({ children }) => {
     }
   };
 
+
+  const searchEvents = async (query, filterType = 'all') => {
+    try {
+      const userId = getUserId();
+      const params = new URLSearchParams();
+      
+      if (query && query.trim()) {
+        params.append('q', query.trim());
+      }
+      
+      if (filterType && filterType !== 'all') {
+        params.append('type', filterType);
+      }
+      
+      params.append('userId', userId);
+      
+      const url = `http://localhost:5001/api/events/search?${params.toString()}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      const parsed = data.map((e) => ({
+        ...e,
+        startDate: new Date(e.startDate),
+        endDate: new Date(e.endDate),
+      }));
+      
+      console.log(`Searched events:`, parsed);
+      setEvents(parsed);
+      return parsed;
+    } catch (err) {
+      console.error("Error searching events:", err);
+      return [];
+    }
+  };
+
   return (
     <CalendarContext.Provider
       value={{
@@ -231,6 +266,7 @@ export const CalendarProvider = ({ children }) => {
         getEventsInRange,
         setUserId,
         fetchEventsByType,
+        searchEvents,
       }}
     >
       {children}

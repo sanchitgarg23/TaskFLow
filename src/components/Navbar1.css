@@ -1,0 +1,235 @@
+
+.navbar1-container {
+    background-color: white;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .navbar1-wrapper {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  
+  @media (min-width: 640px) {
+    .navbar1-wrapper {
+      padding: 0 1.5rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .navbar1-wrapper {
+      padding: 0 2rem;
+    }
+  }
+  
+  .navbar1-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 4rem;
+  }
+  
+  /* Left Section */
+  .navbar1-left {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+  
+  .navbar1-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .navbar1-logo-wrapper {
+    padding: 0.5rem;
+    background-color: #7c3aed;
+    border-radius: 0.5rem;
+  }
+  
+  .navbar1-logo-icon {
+    height: 1.5rem;
+    width: 1.5rem;
+    color: white;
+  }
+  
+  .navbar1-logo-text {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -0.025em;
+  }
+  
+  /* Home Button */
+  .navbar1-home-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    color: #4b5563;
+    background: none;
+    border: none;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  
+  .navbar1-home-button:hover {
+    color: #111827;
+    background-color: #f3f4f6;
+  }
+  
+  .navbar1-home-icon {
+    height: 1rem;
+    width: 1rem;
+  }
+  
+  .navbar1-home-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  /* Search Section */
+  .navbar1-search-container {
+    flex: 1;
+    max-width: 32rem;
+    margin: 0 2rem;
+  }
+  
+  .navbar1-search-wrapper {
+    position: relative;
+  }
+  
+  .navbar1-search-icon-wrapper {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    padding-left: 0.75rem;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+  
+  .navbar1-search-icon {
+    height: 1.25rem;
+    width: 1.25rem;
+    color: #9ca3af;
+  }
+  
+  .navbar1-search-input {
+    width: 100%;
+    padding: 0.625rem 1rem 0.625rem 2.5rem;
+    background-color: #f9fafb;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    outline: none;
+  }
+  
+  .navbar1-search-input::placeholder {
+    color: #6b7280;
+  }
+  
+  .navbar1-search-input:focus {
+    background-color: white;
+    border-color: transparent;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+  
+  /* Right Section */
+  .navbar1-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  /* Create Button */
+  .navbar1-create-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: #2563eb;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .navbar1-create-button:hover {
+    background-color: #1d4ed8;
+  }
+  
+  .navbar1-create-button:focus {
+    box-shadow: 0 0 0 2px #3b82f6, 0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+  
+  .navbar1-create-icon {
+    height: 1rem;
+    width: 1rem;
+    margin-right: 0.5rem;
+  }
+  
+  /* Profile Button */
+  .navbar1-profile-button {
+    padding: 0.5rem;
+    color: #4b5563;
+    background: none;
+    border: none;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .navbar1-profile-button:hover {
+    color: #111827;
+    background-color: #f3f4f6;
+  }
+  
+  .navbar1-profile-button:focus {
+    box-shadow: 0 0 0 2px #6b7280, 0 0 0 4px rgba(107, 114, 128, 0.1);
+  }
+  
+  .navbar1-profile-icon {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .navbar1-search-container {
+      margin: 0 1rem;
+      max-width: 20rem;
+    }
+    
+    .navbar1-left {
+      gap: 1rem;
+    }
+    
+    .navbar1-right {
+      gap: 0.5rem;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .navbar1-search-container {
+      display: none;
+    }
+    
+    .navbar1-logo-text {
+      font-size: 1.125rem;
+    }
+    
+    .navbar1-create-button {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+  }
