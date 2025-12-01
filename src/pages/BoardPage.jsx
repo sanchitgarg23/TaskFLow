@@ -9,12 +9,19 @@ import { useBoards } from '../context/BoardContext';
 const BoardPage = () => {
   const { boardId } = useParams();
   const navigate = useNavigate();
-  const { boards, createBoard, updateBoard, getBoardById } = useBoards();
+  const { boards, createBoard, updateBoard, getBoardById, loading, fetchBoards } = useBoards();
 
   const currentBoard = boardId ? getBoardById(boardId) : undefined;
 
-  const handleCreateBoard = (name, template) => {
-    const newBoard = createBoard(name, template);
+  // Refetch boards if current board is not found (handles deep links or sync issues)
+  React.useEffect(() => {
+    if (!loading && !currentBoard && boardId) {
+      fetchBoards();
+    }
+  }, [loading, currentBoard, boardId, fetchBoards]);
+
+  const handleCreateBoard = async (name, template) => {
+    const newBoard = await createBoard(name, template);
     navigate(`/board/${newBoard.id}`);
   };
 
@@ -25,6 +32,16 @@ const BoardPage = () => {
   const handleNavigateHome = () => {
     navigate('/homepage');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700">Loading...</h2>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentBoard) {
     return (

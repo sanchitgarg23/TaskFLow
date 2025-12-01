@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, CheckCircle } from 'lucide-react';
-import './Login.css'; // Import the CSS file
+import './Login.css'; 
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useBoards } from '../context/BoardContext';
 
 const Login = () => {
-
+  const { fetchBoards } = useBoards();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -34,6 +35,10 @@ const Login = () => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     localStorage.setItem("token", data.token);
+
+    // 
+    localStorage.setItem("user", JSON.stringify(data.user));
+    await fetchBoards(); // Refresh boards
     alert("Login successful!");
     navigate("/homepage");
   } catch (err) {

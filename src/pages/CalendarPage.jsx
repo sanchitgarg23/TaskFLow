@@ -37,8 +37,8 @@ const CalendarPage = () => {
   // filterType limits events shown by type (like meetings, tasks, reminders, etc.).
   const [filterType, setFilterType] = useState('all');
 
-  const handleCreateBoard = (name, template) => {
-    const newBoard = createBoard(name, template);
+  const handleCreateBoard = async (name, template) => {
+    const newBoard = await createBoard(name, template);
     navigate(`/board/${newBoard.id}`);
   };
 

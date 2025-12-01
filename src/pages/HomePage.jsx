@@ -10,8 +10,8 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { boards, createBoard } = useBoards();
 
-  const handleCreateBoard = (name, template) => {
-    const newBoard = createBoard(name, template);
+  const handleCreateBoard = async (name, template) => {
+    const newBoard = await createBoard(name, template);
     navigate(`/board/${newBoard.id}`);
   };
 
@@ -63,7 +63,7 @@ const HomePage = () => {
                     </div>
                     <h3 className="board-name">{board.name}</h3>
                     <p className="board-template">
-                      {board.template.replace('-', ' ')}
+                      {(board.type || "Kanban").replace('-', ' ')}
                     </p>
                   </button>
                 ))}

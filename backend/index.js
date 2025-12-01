@@ -299,6 +299,360 @@ app.get("/api/events/search", async (req, res) => {
 });
 
 
+
+
+// Create a new board
+app.post("/api/boards", async (req, res) => {
+  try {
+    const { name, type,color, userId } = req.body;
+
+    if (!name || !userId) {
+      return res.status(400).json({ error: "Name and userId are required" });
+    }
+
+
+    const board = await prisma.board.create({
+      data: {
+        name,
+        type: type || "Kanban",
+        color: color || "#3B82F6",
+        userId: parseInt(userId),
+      },
+    });
+
+    
+    // Define default lists for each template type
+    const templateLists = {
+      "Kanban Board": ["To Do", "In Progress", "Done"],
+      "Kanban": ["To Do", "In Progress", "Done"],
+      "Project Management": ["Backlog", "Planning", "In Progress", "Review", "Complete"],
+      "Sprint Planning": ["Sprint Backlog", "In Development", "Testing", "Done"],
+      "Content Calendar": ["Ideas", "Writing", "Review", "Scheduled", "Published"],
+      "Bug Tracking": ["Reported", "Investigating", "In Progress", "Testing", "Resolved"],
+      "Personal Tasks": ["Today", "This Week", "Later", "Completed"]
+    };
+
+    const listsToCreate = templateLists[board.type] || templateLists["Kanban Board"];
+
+    if (listsToCreate) {
+      await prisma.list.createMany({
+        data: listsToCreate.map((title, index) => ({
+          title,
+          position: index,
+          boardId: board.id
+        }))
+      });
+    }
+
+    // Fetch the board again to include list
+    // const newBoard = await prisma.board.findUnique({
+    //   where: { id: board.id },
+    //   include: { lists: true },
+    // });
+    const newBoard = await prisma.board.findUnique({
+      where: { id: board.id },
+      include: {
+        lists: {
+          orderBy: { position: "asc" },
+          include: {
+            cards: {
+              orderBy: { position: "asc" },
+            },
+          },
+        },
+      },
+    });
+
+    res.status(201).json(newBoard);
+  } catch (err) {
+    console.error("Error creating board:", err);
+    res.status(500).json({ error: "Failed to create board" });
+  }
+});
+
+// Get all boards for a the user which i created  jcdr
+app.get("/api/boards", async (req, res) => {
+  try {
+    // const { userId } = req.query;
+    //here i did due to sort
+     const { userId, sortBy = 'created', order = 'desc' } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+
+     let orderByClause;
+    switch (sortBy) {
+      case 'name':
+        orderByClause = { name: order };
+        break;
+      case 'created':
+        orderByClause = { createdAt: order };
+        break;
+      case 'updated':
+        orderByClause = { updatedAt: order };
+        break;
+      default:
+        orderByClause = { createdAt: 'desc' };
+    }
+
+    const boards = await prisma.board.findMany({
+      where: { userId: parseInt(userId) },
+      include: {
+        lists: {
+          orderBy: { position: "asc" },
+          include: {
+            cards: {
+              orderBy: { position: "asc" },
+            },
+          },
+        },
+      },
+      orderBy: orderByClause, // ← Backend sorting happens here
+    });
+
+    res.json(boards);
+  } catch (err) {
+    console.error("Error fetching boards:", err);
+    res.status(500).json({ error: "Failed to fetch boards" });
+  }
+});
+
+// Get a specific board
+app.get("/api/boards/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const board = await prisma.board.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        lists: {
+          orderBy: { position: "asc" },
+          include: {
+            cards: {
+              orderBy: { position: "asc" },
+            },
+          },
+        },
+      },
+    });
+
+    if (!board) {
+      return res.status(404).json({ error: "Board not found" });
+    }
+
+    res.json(board);
+  } catch (err) {
+    console.error("Error fetching board:", err);
+    res.status(500).json({ error: "Failed to fetch board" });
+  }
+});
+
+
+
+// Update board 
+app.put("/api/boards/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, type, color } = req.body;
+
+    const updatedBoard = await prisma.board.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...(name && { name }),
+        ...(type && { type }),
+        ...(color && { color }),
+      },
+      include: {
+        lists: {
+          orderBy: { position: "asc" },
+          include: { cards: { orderBy: { position: "asc" } } },
+        },
+      },
+    });
+
+    res.json(updatedBoard);
+  } catch (err) {
+    console.error("Error updating board:", err);
+    res.status(500).json({ error: "Failed to update board" });
+  }
+});
+
+// Delete board (cascade removes lists/cards via Prisma schema)
+app.delete("/api/boards/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.board.delete({ where: { id: parseInt(id) } });
+    res.json({ message: "Board deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting board:", err);
+    res.status(500).json({ error: "Failed to delete board" });
+  }
+});
+
+
+
+// Create list
+app.post("/api/boards/:boardId/lists", async (req, res) => {
+  try {
+    const { boardId } = req.params;
+    const { title, position = 0 } = req.body;
+
+    if (!title) return res.status(400).json({ error: "Title is required" });
+
+    const list = await prisma.list.create({
+      data: {
+        title,
+        position,
+        boardId: parseInt(boardId),
+      },
+      include: { cards: true },
+    });
+
+    res.status(201).json(list);
+  } catch (err) {
+    console.error("Error creating list:", err);
+    res.status(500).json({ error: "Failed to create list" });
+  }
+});
+
+// Update list
+app.put("/api/lists/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, position } = req.body;
+
+    const list = await prisma.list.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...(title && { title }),
+        ...(position !== undefined && { position }),
+      },
+      include: { cards: true },
+    });
+
+    res.json(list);
+  } catch (err) {
+    console.error("Error updating list:", err);
+    res.status(500).json({ error: "Failed to update list" });
+  }
+});
+
+// Delete list
+app.delete("/api/lists/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.list.delete({ where: { id: parseInt(id) } });
+    res.json({ message: "List deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting list:", err);
+    res.status(500).json({ error: "Failed to delete list" });
+  }
+});
+
+
+
+// Create card
+app.post("/api/lists/:listId/cards", async (req, res) => {
+  try {
+    const { listId } = req.params;
+    const { title, description = "", position = 0 } = req.body;
+
+    if (!title) return res.status(400).json({ error: "Title is required" });
+
+    const card = await prisma.card.create({
+      data: {
+        title,
+        description,
+        position,
+        listId: parseInt(listId),
+      },
+    });
+
+    res.status(201).json(card);
+  } catch (err) {
+    console.error("Error creating card:", err);
+    res.status(500).json({ error: "Failed to create card" });
+  }
+});
+
+// Update card
+app.put("/api/cards/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, position, listId } = req.body;
+
+    const card = await prisma.card.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...(title && { title }),
+        ...(description !== undefined && { description }),
+        ...(position !== undefined && { position }),
+        ...(listId && { listId: parseInt(listId) }), // enables moving cards
+      },
+    });
+
+    res.json(card);
+  } catch (err) {
+    console.error("Error updating card:", err);
+    res.status(500).json({ error: "Failed to update card" });
+  }
+});
+
+// Delete card
+app.delete("/api/cards/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.card.delete({ where: { id: parseInt(id) } });
+    res.json({ message: "Card deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting card:", err);
+    res.status(500).json({ error: "Failed to delete card" });
+  }
+});
+
+// Get all cards for a list
+app.get("/api/lists/:listId/cards", async (req, res) => {
+  try {
+    const { listId } = req.params;
+
+    const cards = await prisma.card.findMany({
+      where: { listId: parseInt(listId) },
+      orderBy: { position: "asc" },
+    });
+
+    res.json(cards);
+  } catch (err) {
+    console.error("Error fetching cards:", err);
+    res.status(500).json({ error: "Failed to fetch cards" });
+  }
+});
+
+// Get a specific card
+app.get("/api/cards/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const card = await prisma.card.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!card) {
+      return res.status(404).json({ error: "Card not found" });
+    }
+
+    res.json(card);
+  } catch (err) {
+    console.error("Error fetching card:", err);
+    res.status(500).json({ error: "Failed to fetch card" });
+  }
+});   
+
+
+
+
+
 const PORT = 5001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 

@@ -13,8 +13,8 @@ const TeamBoardCreationPage = () => {
     navigate('/team');
   };
 
-  const handleCreateBoard = (name, template, assignedMembers) => {
-    const newBoard = createBoard(`[Team] ${name}`, template);
+  const handleCreateBoard = async (name, template, assignedMembers) => {
+    const newBoard = await createBoard(`[Team] ${name}`, template);
     navigate(`/board/${newBoard.id}`);
   };
 

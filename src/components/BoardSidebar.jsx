@@ -36,7 +36,7 @@ const BoardSidebar = ({ boards, currentBoardId, onSelectBoard }) => {
                       {board.name}
                     </h3>
                     <p className="board-item-meta">
-                      {board.template.replace('-', ' ')} • {board.lists.length} lists
+                      {(board.type || "Kanban").replace('-', ' ')} • {board.lists?.length || 0} lists
                     </p>
                   </div>
                 </div>

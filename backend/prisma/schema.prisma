@@ -27,6 +27,7 @@ model User {
   subscribeNewsletter Boolean   @default(false) // 👈 add this
   createdAt           DateTime  @default(now())
   events              Event[]
+  boards              Board[]
 }
 
 model Event {
@@ -41,4 +42,38 @@ model Event {
   createdAt   DateTime @default(now())
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
+}
+
+model Board {
+  id        Int      @id @default(autoincrement())
+  name      String
+  type      String   @default("Kanban")
+  color     String   @default("#3B82F6")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  lists     List[]
+}
+
+model List {
+  id        Int      @id @default(autoincrement())
+  title     String
+  position  Int      
+  boardId   Int
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards     Card[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Card {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?  @db.Text
+  position    Int      
+  listId      Int
+  list        List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

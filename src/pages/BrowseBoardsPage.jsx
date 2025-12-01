@@ -7,7 +7,7 @@ import { useBoards } from '../context/BoardContext';
 
 const BrowseBoardsPage = () => {
   const navigate = useNavigate();
-  const { boards, createBoard } = useBoards();
+  const { boards, createBoard,fetchBoards } = useBoards();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTemplate, setFilterTemplate] = useState('all');
@@ -15,8 +15,16 @@ const BrowseBoardsPage = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [selectedBoards, setSelectedBoards] = useState([]);
 
-  const handleCreateBoard = (name, template) => {
-    const newBoard = createBoard(name, template);
+
+
+  const handleSortChange = (newSortBy) => {
+  setSortBy(newSortBy);
+  const order = 'desc'; // or 'asc' based on your preference
+  fetchBoards(newSortBy, order);
+};
+
+  const handleCreateBoard = async (name, template) => {
+    const newBoard = await createBoard(name, template);
     navigate(`/board/${newBoard.id}`);
   };
 
@@ -39,7 +47,7 @@ const BrowseBoardsPage = () => {
   const filteredAndSortedBoards = boards
     .filter(board => {
       const matchesSearch = board.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesTemplate = filterTemplate === 'all' || board.template === filterTemplate;
+      const matchesTemplate = filterTemplate === 'all' || (board.type || "Kanban") === filterTemplate;
       return matchesSearch && matchesTemplate;
     })
     .sort((a, b) => {
@@ -107,7 +115,7 @@ const BrowseBoardsPage = () => {
 
         <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
           <span className="inline-flex items-center px-2 py-1 bg-gray-100 rounded-full text-xs font-medium">
-            {getTemplateDisplayName(board.template)}
+            {getTemplateDisplayName(board.type || "Kanban")}
           </span>
           <span>{board.lists.length} lists</span>
         </div>
@@ -150,7 +158,7 @@ const BrowseBoardsPage = () => {
               {board.name}
             </h3>
             <span className="inline-flex items-center px-2 py-1 bg-gray-100 rounded-full text-xs font-medium text-gray-600">
-              {getTemplateDisplayName(board.template)}
+              {getTemplateDisplayName(board.type || "Kanban")}
             </span>
           </div>
           <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
@@ -255,8 +263,8 @@ const BrowseBoardsPage = () => {
 
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                onChange={(e) => handleSortChange(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg..."
               >
                 <option value="created">Sort by Created</option>
                 <option value="name">Sort by Name</option>

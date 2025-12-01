@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import './BoardNameModal.css'; // Import the new CSS file
+import './BoardNameModal.css';
 
 const BoardNameModal = ({ isOpen, onClose, template, onCreateBoard }) => {
   const [boardName, setBoardName] = useState('');
