@@ -370,19 +370,47 @@ app.post("/api/boards", async (req, res) => {
   }
 });
 
-// Get all boards for a the user which i created  jcdr
+// Get all boards for a user with sorting, search, filtering, and pagination
 app.get("/api/boards", async (req, res) => {
   try {
-    // const { userId } = req.query;
-    //here i did due to sort
-     const { userId, sortBy = 'created', order = 'desc' } = req.query;
+    const { 
+      userId, 
+      sortBy = 'created', 
+      order = 'desc', 
+      search = '', 
+      filterTemplate = 'all',
+      page = '1',
+      limit = '12'
+    } = req.query;
 
     if (!userId) {
       return res.status(400).json({ error: "userId is required" });
     }
 
+    // Convert page and limit to integers
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
 
-     let orderByClause;
+    // Build where clause
+    const whereClause = {
+      userId: parseInt(userId)
+    };
+
+    // Add search filter if provided
+    if (search && search.trim()) {
+      whereClause.name = {
+        contains: search.trim()
+      };
+    }
+
+    // Add template filter if provided
+    if (filterTemplate && filterTemplate !== 'all') {
+      whereClause.type = filterTemplate;
+    }
+
+    // Determine the orderBy clause based on sortBy parameter
+    let orderByClause;
     switch (sortBy) {
       case 'name':
         orderByClause = { name: order };
@@ -397,8 +425,14 @@ app.get("/api/boards", async (req, res) => {
         orderByClause = { createdAt: 'desc' };
     }
 
+    // Get total count for pagination
+    const totalCount = await prisma.board.count({
+      where: whereClause
+    });
+
+    // Get paginated boards
     const boards = await prisma.board.findMany({
-      where: { userId: parseInt(userId) },
+      where: whereClause,
       include: {
         lists: {
           orderBy: { position: "asc" },
@@ -409,10 +443,23 @@ app.get("/api/boards", async (req, res) => {
           },
         },
       },
-      orderBy: orderByClause, // ← Backend sorting happens here
+      orderBy: orderByClause,
+      skip: skip,
+      take: limitNum,
     });
 
-    res.json(boards);
+    // Return boards with pagination metadata
+    res.json({
+      boards,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(totalCount / limitNum),
+        totalCount,
+        limit: limitNum,
+        hasNextPage: pageNum < Math.ceil(totalCount / limitNum),
+        hasPrevPage: pageNum > 1
+      }
+    });
   } catch (err) {
     console.error("Error fetching boards:", err);
     res.status(500).json({ error: "Failed to fetch boards" });

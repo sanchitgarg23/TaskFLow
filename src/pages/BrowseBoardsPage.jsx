@@ -7,21 +7,41 @@ import { useBoards } from '../context/BoardContext';
 
 const BrowseBoardsPage = () => {
   const navigate = useNavigate();
-  const { boards, createBoard,fetchBoards } = useBoards();
+  const { boards, pagination, createBoard, fetchBoards, deleteBoard, renameBoard } = useBoards();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTemplate, setFilterTemplate] = useState('all');
   const [sortBy, setSortBy] = useState('created');
   const [viewMode, setViewMode] = useState('grid');
   const [selectedBoards, setSelectedBoards] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
 
 
   const handleSortChange = (newSortBy) => {
-  setSortBy(newSortBy);
-  const order = 'desc'; // or 'asc' based on your preference
-  fetchBoards(newSortBy, order);
-};
+    setSortBy(newSortBy);
+    setCurrentPage(1); // Reset to first page
+    fetchBoards(newSortBy, 'desc', searchQuery, filterTemplate, 1);
+  };
+
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page
+    fetchBoards(sortBy, 'desc', query, filterTemplate, 1);
+  };
+
+  const handleFilterChange = (template) => {
+    setFilterTemplate(template);
+    setCurrentPage(1); // Reset to first page
+    fetchBoards(sortBy, 'desc', searchQuery, template, 1);
+  };
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    fetchBoards(sortBy, 'desc', searchQuery, filterTemplate, newPage);
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleCreateBoard = async (name, template) => {
     const newBoard = await createBoard(name, template);
@@ -44,24 +64,31 @@ const BrowseBoardsPage = () => {
     );
   };
 
-  const filteredAndSortedBoards = boards
-    .filter(board => {
-      const matchesSearch = board.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesTemplate = filterTemplate === 'all' || (board.type || "Kanban") === filterTemplate;
-      return matchesSearch && matchesTemplate;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'created':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case 'updated':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        default:
-          return 0;
+  const handleDeleteBoard = async (boardId, boardName) => {
+    if (window.confirm(`Are you sure you want to delete "${boardName}"? This action cannot be undone.`)) {
+      try {
+        await deleteBoard(boardId);
+        // Optionally show success message
+      } catch (err) {
+        alert("Failed to delete board. Please try again.");
       }
-    });
+    }
+  };
+
+  const handleRenameBoard = async (boardId, currentName) => {
+    const newName = prompt("Enter new board name:", currentName);
+    if (newName && newName.trim() && newName.trim() !== currentName) {
+      try {
+        await renameBoard(boardId, newName.trim());
+        // Optionally show success message
+      } catch (err) {
+        alert("Failed to rename board. Please try again.");
+      }
+    }
+  };
+
+  // No need for frontend filtering - backend handles it now
+  const filteredAndSortedBoards = boards;
 
   const getTemplateDisplayName = (template) => {
     return template.split('-').map(word => 
@@ -106,8 +133,19 @@ const BrowseBoardsPage = () => {
               <Star className="h-4 w-4" />
             </button>
             <div className="relative">
-              <button className="p-1 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                <MoreHorizontal className="h-4 w-4" />
+              <button 
+                onClick={() => handleRenameBoard(board.id, board.name)}
+                className="p-1 text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Edit board"
+              >
+                <Edit3 className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => handleDeleteBoard(board.id, board.name)}
+                className="p-1 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Delete board"
+              >
+                <Trash2 className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -176,10 +214,16 @@ const BrowseBoardsPage = () => {
           <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
             <Copy className="h-4 w-4" />
           </button>
-          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <button 
+            onClick={() => handleRenameBoard(board.id, board.name)}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          >
             <Edit3 className="h-4 w-4" />
           </button>
-          <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+          <button 
+            onClick={() => handleDeleteBoard(board.id, board.name)}
+            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
@@ -239,7 +283,7 @@ const BrowseBoardsPage = () => {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search boards..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -249,16 +293,17 @@ const BrowseBoardsPage = () => {
             <div className="flex items-center space-x-3">
               <select
                 value={filterTemplate}
-                onChange={(e) => setFilterTemplate(e.target.value)}
+                onChange={(e) => handleFilterChange(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               >
                 <option value="all">All Templates</option>
-                <option value="kanban">Kanban Board</option>
-                <option value="project-management">Project Management</option>
-                <option value="sprint-planning">Sprint Planning</option>
-                <option value="content-calendar">Content Calendar</option>
-                <option value="bug-tracking">Bug Tracking</option>
-                <option value="personal-tasks">Personal Tasks</option>
+                <option value="Kanban Board">Kanban Board</option>
+                <option value="Kanban">Kanban</option>
+                <option value="Project Management">Project Management</option>
+                <option value="Sprint Planning">Sprint Planning</option>
+                <option value="Content Calendar">Content Calendar</option>
+                <option value="Bug Tracking">Bug Tracking</option>
+                <option value="Personal Tasks">Personal Tasks</option>
               </select>
 
               <select
@@ -331,6 +376,82 @@ const BrowseBoardsPage = () => {
                 {filteredAndSortedBoards.map((board) => (
                   <BoardListItem key={board.id} board={board} />
                 ))}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
+                {/* Page Info */}
+                <div className="text-sm text-gray-600">
+                  Showing {((pagination.currentPage - 1) * pagination.limit) + 1} to{' '}
+                  {Math.min(pagination.currentPage * pagination.limit, pagination.totalCount)} of{' '}
+                  {pagination.totalCount} boards
+                </div>
+
+                {/* Page Numbers */}
+                <div className="flex items-center space-x-2">
+                  {/* Previous Button */}
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={!pagination.hasPrevPage}
+                    className={`px-3 py-2 rounded-lg border transition-colors ${
+                      pagination.hasPrevPage
+                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        : 'border-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    Previous
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        // Show first page, last page, current page, and pages around current
+                        return (
+                          page === 1 ||
+                          page === pagination.totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        );
+                      })
+                      .map((page, index, array) => {
+                        // Add ellipsis if there's a gap
+                        const showEllipsisBefore = index > 0 && page - array[index - 1] > 1;
+                        
+                        return (
+                          <React.Fragment key={page}>
+                            {showEllipsisBefore && (
+                              <span className="px-2 text-gray-400">...</span>
+                            )}
+                            <button
+                              onClick={() => handlePageChange(page)}
+                              className={`px-3 py-2 rounded-lg border transition-colors ${
+                                page === currentPage
+                                  ? 'bg-blue-600 text-white border-blue-600'
+                                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          </React.Fragment>
+                        );
+                      })}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={!pagination.hasNextPage}
+                    className={`px-3 py-2 rounded-lg border transition-colors ${
+                      pagination.hasNextPage
+                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        : 'border-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
           </div>
