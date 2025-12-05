@@ -13,11 +13,11 @@ const app = express();
 
 
 // Middleware
-app.use(cors());
-// app.use(cors({
-//   origin: "https://task-flow-one-sandy.vercel.app", // your Vercel frontend URL
+// app.use(cors());
+app.use(cors({
+  origin: "https://task-flow-one-sandy.vercel.app", // your Vercel frontend URL
 
-// }));
+}));
 app.use(express.json());
 
 app.get("/", (req, res) => {
