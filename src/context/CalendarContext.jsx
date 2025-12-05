@@ -30,7 +30,7 @@ export const CalendarProvider = ({ children }) => {
 
   //  Fetch the events on mount
   useEffect(() => {
-    fetch("http://localhost:5001/api/events")
+    fetch("https://taskflow-im15.onrender.com/api/events")
       .then((res) => res.json())
       .then((data) => {
         // Convert string dates from backend into JS Date objects
@@ -63,7 +63,7 @@ export const CalendarProvider = ({ children }) => {
       
       console.log("Sending to backend:", dataToSend);
       
-      const res = await fetch("http://localhost:5001/api/events", {
+      const res = await fetch("https://taskflow-im15.onrender.com/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
@@ -111,7 +111,7 @@ export const CalendarProvider = ({ children }) => {
 
       console.log("Updating event:", eventId, dataToSend);
 
-      const res = await fetch(`http://localhost:5001/api/events/${eventId}`, {
+      const res = await fetch(`https://taskflow-im15.onrender.com/api/events/${eventId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
@@ -143,7 +143,7 @@ export const CalendarProvider = ({ children }) => {
   const deleteEvent = async (eventId) => {
     try {
       console.log("Deleting event:", eventId);
-      const res = await fetch(`http://localhost:5001/api/events/${eventId}`, {
+      const res = await fetch(`https://taskflow-im15.onrender.com/api/events/${eventId}`, {
         method: "DELETE",
       });
       if (!res.ok) { 
@@ -199,8 +199,8 @@ export const CalendarProvider = ({ children }) => {
   const fetchEventsByType = async (type = 'all') => {
     try {
       const url = type === 'all' 
-        ? "http://localhost:5001/api/events"
-        : `http://localhost:5001/api/events/type/${type}`;
+        ? "https://taskflow-im15.onrender.com/api/events"
+        : `https://taskflow-im15.onrender.com/api/events/type/${type}`;
         
       const res = await fetch(url);
       const data = await res.json();
@@ -236,7 +236,7 @@ export const CalendarProvider = ({ children }) => {
       
       params.append('userId', userId);
       
-      const url = `http://localhost:5001/api/events/search?${params.toString()}`;
+      const url = `https://taskflow-im15.onrender.com/api/events/search?${params.toString()}`;
       const res = await fetch(url);
       const data = await res.json();
       

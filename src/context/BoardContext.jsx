@@ -55,7 +55,7 @@ export const BoardProvider = ({ children }) => {
       }
 
       const res = await fetch(
-        `http://localhost:5001/api/boards?${params.toString()}`
+        `https://taskflow-im15.onrender.com/api/boards?${params.toString()}`
       );
       if (!res.ok) throw new Error("Failed to fetch boards");
       
@@ -79,7 +79,7 @@ export const BoardProvider = ({ children }) => {
       if (!userStr) throw new Error("User not found");
       const user = JSON.parse(userStr);
 
-      const res = await fetch("http://localhost:5001/api/boards", {
+      const res = await fetch("https://taskflow-im15.onrender.com/api/boards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -113,7 +113,7 @@ export const BoardProvider = ({ children }) => {
 
   const deleteBoard = async (boardId) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/boards/${boardId}`, {
+      const res = await fetch(`https://taskflow-im15.onrender.com/api/boards/${boardId}`, {
         method: "DELETE",
       });
 
@@ -130,7 +130,7 @@ export const BoardProvider = ({ children }) => {
 
   const renameBoard = async (boardId, newName) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/boards/${boardId}`, {
+      const res = await fetch(`https://taskflow-im15.onrender.com/api/boards/${boardId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName }),

@@ -23,8 +23,8 @@ model User {
   dateOfBirth         DateTime?
   gender              String?
   address             String?
-  company             String?              // 👈 add this
-  subscribeNewsletter Boolean   @default(false) // 👈 add this
+  company             String?              
+  subscribeNewsletter Boolean   @default(false) 
   createdAt           DateTime  @default(now())
   events              Event[]
   boards              Board[]
@@ -70,10 +70,10 @@ model List {
 model Card {
   id          Int      @id @default(autoincrement())
   title       String
-  description String?  @db.Text
+  description String? @db.Text
   position    Int      
   listId      Int
-  list        List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  list        List     @relation(fields:[listId],references:[id],onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -14,6 +14,10 @@ const app = express();
 
 // Middleware
 app.use(cors());
+// app.use(cors({
+//   origin: "https://task-flow-one-sandy.vercel.app", // your Vercel frontend URL
+
+// }));
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -448,7 +452,7 @@ app.get("/api/boards", async (req, res) => {
       take: limitNum,
     });
 
-    // Return boards with pagination metadata
+    // Return boards with pagination 
     res.json({
       boards,
       pagination: {
