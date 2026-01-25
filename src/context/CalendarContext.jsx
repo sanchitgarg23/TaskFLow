@@ -1,10 +1,6 @@
-
-
-
 import React, { createContext, useContext, useState, useEffect } from "react";
-
+import API_BASE_URL from '../api';
 const CalendarContext = createContext();
-
 export const useCalendar = () => {
   const context = useContext(CalendarContext);
   if (!context) {
@@ -13,27 +9,33 @@ export const useCalendar = () => {
   return context;
 };
 
+
+
 export const CalendarProvider = ({ children }) => {
   const [events, setEvents] = useState([]);
 
-  // Helper function to get userId from localStorage
   const getUserId = () => {
-    const storedUserId = localStorage.getItem('userId');
-    if (!storedUserId) {
-
-      const defaultUserId = prompt('Enter your user ID (or press OK for default):', '1');
-      localStorage.setItem('userId', defaultUserId || '1');
-      return parseInt(defaultUserId || '1');
+    // Get user from localStorage (contains MongoDB ObjectId string)
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return user.id; // Return the string ObjectId
+      } catch (e) {
+        console.error('Error parsing user from localStorage:', e);
+      }
     }
-    return parseInt(storedUserId);
+    // Fallback to legacy userId if user object doesn't exist
+    const storedUserId = localStorage.getItem('userId');
+    return storedUserId || null;
   };
 
-  //  Fetch the events on mount
+
   useEffect(() => {
-    fetch("https://taskflow-im15.onrender.com/api/events")
+    fetch(`${API_BASE_URL}/api/events`)
       .then((res) => res.json())
       .then((data) => {
-        // Convert string dates from backend into JS Date objects
+
         const parsed = data.map((e) => ({
           ...e,
           startDate: new Date(e.startDate),
@@ -47,7 +49,7 @@ export const CalendarProvider = ({ children }) => {
 
   const createEvent = async (eventData) => {
     try {
-      // ✅ Get userId from localStorage
+     
       const userId = getUserId();
       
       const dataToSend = {
@@ -63,7 +65,7 @@ export const CalendarProvider = ({ children }) => {
       
       console.log("Sending to backend:", dataToSend);
       
-      const res = await fetch("https://taskflow-im15.onrender.com/api/events", {
+      const res = await fetch(`${API_BASE_URL}/api/events`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
@@ -111,7 +113,7 @@ export const CalendarProvider = ({ children }) => {
 
       console.log("Updating event:", eventId, dataToSend);
 
-      const res = await fetch(`https://taskflow-im15.onrender.com/api/events/${eventId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
@@ -143,7 +145,7 @@ export const CalendarProvider = ({ children }) => {
   const deleteEvent = async (eventId) => {
     try {
       console.log("Deleting event:", eventId);
-      const res = await fetch(`https://taskflow-im15.onrender.com/api/events/${eventId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
         method: "DELETE",
       });
       if (!res.ok) { 
@@ -199,8 +201,8 @@ export const CalendarProvider = ({ children }) => {
   const fetchEventsByType = async (type = 'all') => {
     try {
       const url = type === 'all' 
-        ? "https://taskflow-im15.onrender.com/api/events"
-        : `https://taskflow-im15.onrender.com/api/events/type/${type}`;
+        ? `${API_BASE_URL}/api/events`
+        : `${API_BASE_URL}/api/events/type/${type}`;
         
       const res = await fetch(url);
       const data = await res.json();
@@ -236,7 +238,7 @@ export const CalendarProvider = ({ children }) => {
       
       params.append('userId', userId);
       
-      const url = `https://taskflow-im15.onrender.com/api/events/search?${params.toString()}`;
+      const url = `${API_BASE_URL}/api/events/search?${params.toString()}`;
       const res = await fetch(url);
       const data = await res.json();
       

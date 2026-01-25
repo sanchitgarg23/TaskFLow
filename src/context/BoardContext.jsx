@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState } from 'react';
+import API_BASE_URL from '../api';
 import { boardTemplates } from '../data/templates'; // i might need this if used somewhere
 
 const BoardContext = createContext();  
@@ -55,7 +56,7 @@ export const BoardProvider = ({ children }) => {
       }
 
       const res = await fetch(
-        `https://taskflow-im15.onrender.com/api/boards?${params.toString()}`
+        `${API_BASE_URL}/api/boards?${params.toString()}`
       );
       if (!res.ok) throw new Error("Failed to fetch boards");
       
@@ -79,7 +80,7 @@ export const BoardProvider = ({ children }) => {
       if (!userStr) throw new Error("User not found");
       const user = JSON.parse(userStr);
 
-      const res = await fetch("https://taskflow-im15.onrender.com/api/boards", {
+      const res = await fetch(`${API_BASE_URL}/api/boards`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -108,12 +109,12 @@ export const BoardProvider = ({ children }) => {
   };
 
   const getBoardById = (id) => {
-    return boards.find(board => board.id === parseInt(id));
+    return boards.find(board => board.id === id || board.id === String(id));
   };
 
   const deleteBoard = async (boardId) => {
     try {
-      const res = await fetch(`https://taskflow-im15.onrender.com/api/boards/${boardId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/boards/${boardId}`, {
         method: "DELETE",
       });
 
@@ -130,7 +131,7 @@ export const BoardProvider = ({ children }) => {
 
   const renameBoard = async (boardId, newName) => {
     try {
-      const res = await fetch(`https://taskflow-im15.onrender.com/api/boards/${boardId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/boards/${boardId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName }),

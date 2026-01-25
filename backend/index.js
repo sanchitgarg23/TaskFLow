@@ -14,10 +14,36 @@ const app = express();
 
 // Middleware
 // app.use(cors());
-app.use(cors({
-  origin: "https://task-flow-one-sandy.vercel.app", // your Vercel frontend URL
+// app.use(cors({
+//   origin: ["https://task-flow-one-sandy.vercel.app", "http://localhost:5174", "http://localhost:5173"], // your Vercel frontend URL
 
-}));
+// }));
+
+const allowedOrigins = [
+  "https://task-flow-one-sandy.vercel.app", // Deployed Frontend
+  "http://localhost:5173",                  // Local Dev
+  "http://localhost:5174",                  // Local Dev alt
+  "https://taskflow-im15.onrender.com"      // Backend domain (MUST be added)
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow Postman, server-to-server (no origin)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log(" CORS Blocked Origin:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -35,7 +61,7 @@ app.get("/api/events", async (req, res) => {
     
     // Only filter by userId if provided
     if (userId) {
-      whereClause.userId = parseInt(userId);
+      whereClause.userId = userId; // MongoDB uses string IDs
     }
     
     const events = await prisma.event.findMany({
@@ -53,7 +79,7 @@ app.get("/api/events", async (req, res) => {
 // to create
 app.post("/api/events", async (req, res) => {
   const { title, description, type, color, startDate, endDate, allDay, userId } = req.body;
-  // ✅ Added allDay
+
   
   try {
     console.log("Received event data:", JSON.stringify(req.body, null, 2));
@@ -66,8 +92,8 @@ app.post("/api/events", async (req, res) => {
         endDate: new Date(endDate),
         type,
         color,
-        allDay, // ✅ Added allDay
-        userId
+        allDay, 
+        userId // MongoDB uses string IDs
       },
     });
     res.status(201).json(event);
@@ -84,11 +110,11 @@ app.put("/api/events/:id", async (req, res) => {
     console.log("Update data:", req.body);
     
     const updated = await prisma.event.update({
-      where: { id: Number(req.params.id) },
+      where: { id: req.params.id }, // MongoDB uses string IDs
       data: req.body,
     });
     
-    console.log("✅ Event updated:", updated);
+    console.log("Event updated:", updated);
     res.json(updated);
   } catch (err) {
     console.error("Error updating event:", err.message);
@@ -103,7 +129,7 @@ app.put("/api/events/:id", async (req, res) => {
 // Delete event
 app.delete("/api/events/:id", async (req, res) => {
   try {
-    await prisma.event.delete({ where: { id: Number(req.params.id) } });
+    await prisma.event.delete({ where: { id: req.params.id } }); // MongoDB uses string IDs
     res.json({ message: "Event deleted" });
   } catch (err) {
     console.error(err);
@@ -144,12 +170,12 @@ app.get("/api/events/user/:userId/type/:type", async (req, res) => {
     let events;
     if (type === 'all') {
       events = await prisma.event.findMany({
-        where: { userId: parseInt(userId) }
+        where: { userId: userId } // MongoDB uses string IDs
       });
     } else {
       events = await prisma.event.findMany({
         where: { 
-          userId: parseInt(userId),
+          userId: userId, // MongoDB uses string IDs
           type: type 
         }
       });
@@ -272,11 +298,10 @@ app.get("/api/events/search", async (req, res) => {
     // Build the where clause
     const whereClause = {};
     
-    // Remove mode: 'insensitive' - MySQL doesn't support it
     if (q && q.trim()) {
       whereClause.OR = [
-        { title: { contains: q.trim() } },
-        { description: { contains: q.trim() } }
+        { title: { contains: q.trim(), mode: 'insensitive' } }, // MongoDB supports mode: 'insensitive'
+        { description: { contains: q.trim(), mode: 'insensitive' } }
       ];
     }
     
@@ -287,7 +312,7 @@ app.get("/api/events/search", async (req, res) => {
     
     // Add user filter if provided
     if (userId) {
-      whereClause.userId = parseInt(userId);
+      whereClause.userId = userId; // MongoDB uses string IDs
     }
     
     const events = await prisma.event.findMany({
@@ -320,7 +345,7 @@ app.post("/api/boards", async (req, res) => {
         name,
         type: type || "Kanban",
         color: color || "#3B82F6",
-        userId: parseInt(userId),
+        userId: userId, // MongoDB uses string IDs
       },
     });
 
@@ -339,20 +364,19 @@ app.post("/api/boards", async (req, res) => {
     const listsToCreate = templateLists[board.type] || templateLists["Kanban Board"];
 
     if (listsToCreate) {
-      await prisma.list.createMany({
-        data: listsToCreate.map((title, index) => ({
-          title,
-          position: index,
-          boardId: board.id
-        }))
-      });
+      // MongoDB doesn't support createMany in the same way, so we create individually
+      for (let i = 0; i < listsToCreate.length; i++) {
+        await prisma.list.create({
+          data: {
+            title: listsToCreate[i],
+            position: i,
+            boardId: board.id
+          }
+        });
+      }
     }
 
     // Fetch the board again to include list
-    // const newBoard = await prisma.board.findUnique({
-    //   where: { id: board.id },
-    //   include: { lists: true },
-    // });
     const newBoard = await prisma.board.findUnique({
       where: { id: board.id },
       include: {
@@ -398,13 +422,14 @@ app.get("/api/boards", async (req, res) => {
 
     // Build where clause
     const whereClause = {
-      userId: parseInt(userId)
+      userId: userId // MongoDB uses string IDs
     };
 
     // Add search filter if provided
     if (search && search.trim()) {
       whereClause.name = {
-        contains: search.trim()
+        contains: search.trim(),
+        mode: 'insensitive' // MongoDB supports case-insensitive search
       };
     }
 
@@ -476,7 +501,7 @@ app.get("/api/boards/:id", async (req, res) => {
     const { id } = req.params;
 
     const board = await prisma.board.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: id }, // MongoDB uses string IDs
       include: {
         lists: {
           orderBy: { position: "asc" },
@@ -509,7 +534,7 @@ app.put("/api/boards/:id", async (req, res) => {
     const { name, type, color } = req.body;
 
     const updatedBoard = await prisma.board.update({
-      where: { id: parseInt(id) },
+      where: { id: id }, // MongoDB uses string IDs
       data: {
         ...(name && { name }),
         ...(type && { type }),
@@ -534,7 +559,7 @@ app.put("/api/boards/:id", async (req, res) => {
 app.delete("/api/boards/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.board.delete({ where: { id: parseInt(id) } });
+    await prisma.board.delete({ where: { id: id } }); // MongoDB uses string IDs
     res.json({ message: "Board deleted successfully" });
   } catch (err) {
     console.error("Error deleting board:", err);
@@ -556,7 +581,7 @@ app.post("/api/boards/:boardId/lists", async (req, res) => {
       data: {
         title,
         position,
-        boardId: parseInt(boardId),
+        boardId: boardId, // MongoDB uses string IDs
       },
       include: { cards: true },
     });
@@ -575,7 +600,7 @@ app.put("/api/lists/:id", async (req, res) => {
     const { title, position } = req.body;
 
     const list = await prisma.list.update({
-      where: { id: parseInt(id) },
+      where: { id: id }, // MongoDB uses string IDs
       data: {
         ...(title && { title }),
         ...(position !== undefined && { position }),
@@ -594,7 +619,7 @@ app.put("/api/lists/:id", async (req, res) => {
 app.delete("/api/lists/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.list.delete({ where: { id: parseInt(id) } });
+    await prisma.list.delete({ where: { id: id } }); // MongoDB uses string IDs
     res.json({ message: "List deleted successfully" });
   } catch (err) {
     console.error("Error deleting list:", err);
@@ -617,7 +642,7 @@ app.post("/api/lists/:listId/cards", async (req, res) => {
         title,
         description,
         position,
-        listId: parseInt(listId),
+        listId: listId, // MongoDB uses string IDs
       },
     });
 
@@ -635,12 +660,12 @@ app.put("/api/cards/:id", async (req, res) => {
     const { title, description, position, listId } = req.body;
 
     const card = await prisma.card.update({
-      where: { id: parseInt(id) },
+      where: { id: id }, // MongoDB uses string IDs
       data: {
         ...(title && { title }),
         ...(description !== undefined && { description }),
         ...(position !== undefined && { position }),
-        ...(listId && { listId: parseInt(listId) }), // enables moving cards
+        ...(listId && { listId: listId }), // MongoDB uses string IDs
       },
     });
 
@@ -655,7 +680,7 @@ app.put("/api/cards/:id", async (req, res) => {
 app.delete("/api/cards/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.card.delete({ where: { id: parseInt(id) } });
+    await prisma.card.delete({ where: { id: id } }); // MongoDB uses string IDs
     res.json({ message: "Card deleted successfully" });
   } catch (err) {
     console.error("Error deleting card:", err);
@@ -669,7 +694,7 @@ app.get("/api/lists/:listId/cards", async (req, res) => {
     const { listId } = req.params;
 
     const cards = await prisma.card.findMany({
-      where: { listId: parseInt(listId) },
+      where: { listId: listId }, // MongoDB uses string IDs
       orderBy: { position: "asc" },
     });
 
@@ -686,7 +711,7 @@ app.get("/api/cards/:id", async (req, res) => {
     const { id } = req.params;
 
     const card = await prisma.card.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: id }, // MongoDB uses string IDs
     });
 
     if (!card) {
@@ -703,9 +728,8 @@ app.get("/api/cards/:id", async (req, res) => {
 
 
 
-
 const PORT = 5001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
-
+// module.exports = {app, prisma};
 

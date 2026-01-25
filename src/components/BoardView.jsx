@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import API_BASE_URL from '../api';
 import { Plus, MoreHorizontal } from "lucide-react";
 import "./BoardView.css"; // Import the new CSS file
 
@@ -11,7 +12,7 @@ const BoardView = ({ board, onUpdateBoard }) => {
 
     try {
       const res = await fetch(
-        `https://taskflow-im15.onrender.com/api/boards/${board.id}/lists`,
+        `${API_BASE_URL}/api/boards/${board.id}/lists`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -48,7 +49,7 @@ const BoardView = ({ board, onUpdateBoard }) => {
       const position = targetList?.cards?.length || 0;
 
       const res = await fetch(
-        `https://taskflow-im15.onrender.com/api/lists/${listId}/cards`,
+        `${API_BASE_URL}/api/lists/${listId}/cards`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -79,7 +80,7 @@ const BoardView = ({ board, onUpdateBoard }) => {
   };
 
   const updateList = async (listId, data) => {
-    const res = await fetch(`https://taskflow-im15.onrender.com/api/lists/${listId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/lists/${listId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -97,7 +98,7 @@ const BoardView = ({ board, onUpdateBoard }) => {
   };
 
   const deleteList = async (listId) => {
-    const res = await fetch(`https://taskflow-im15.onrender.com/api/lists/${listId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/lists/${listId}`, {
       method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to delete list");
@@ -110,7 +111,7 @@ const BoardView = ({ board, onUpdateBoard }) => {
   };
 
   const updateCard = async (cardId, data) => {
-    const res = await fetch(`https://taskflow-im15.onrender.com/api/cards/${cardId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/cards/${cardId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -131,7 +132,7 @@ const BoardView = ({ board, onUpdateBoard }) => {
   };
 
   const deleteCard = async (cardId) => {
-    const res = await fetch(`https://taskflow-im15.onrender.com/api/cards/${cardId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/cards/${cardId}`, {
       method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to delete card");
@@ -148,7 +149,7 @@ const BoardView = ({ board, onUpdateBoard }) => {
 
   // rename the board
   const updateBoardName = async (newName) => {
-    const res = await fetch(`https://taskflow-im15.onrender.com/api/boards/${board.id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/boards/${board.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newName }),
@@ -160,7 +161,7 @@ const BoardView = ({ board, onUpdateBoard }) => {
   // delete the board
   const handleDeleteBoard = async () => {
     if (!window.confirm("Delete this board?")) return;
-    const res = await fetch(`https://taskflow-im15.onrender.com/api/boards/${board.id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/boards/${board.id}`, {
       method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to delete board");
@@ -169,7 +170,7 @@ const BoardView = ({ board, onUpdateBoard }) => {
 
   // refresh the board
   const refreshBoard = async () => {
-    const res = await fetch(`https://taskflow-im15.onrender.com/api/boards/${board.id}`);
+    const res = await fetch(`${API_BASE_URL}/api/boards/${board.id}`);
     if (!res.ok) throw new Error("Failed to fetch board");
     const freshBoard = await res.json();
     onUpdateBoard(freshBoard);

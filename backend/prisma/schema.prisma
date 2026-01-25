@@ -1,19 +1,17 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
+
 model User {
-  id                  Int       @id @default(autoincrement())
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
   firstName           String
   lastName            String
   email               String    @unique
@@ -31,36 +29,36 @@ model User {
 }
 
 model Event {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
-  description String?  @db.Text       
+  description String?
   startDate   DateTime
   endDate     DateTime
   type        String   @default("task")  
   color       String   @default("#3B82F6")  
   allDay      Boolean  @default(false)  
   createdAt   DateTime @default(now())
-  userId      Int
+  userId      String   @db.ObjectId
   user        User     @relation(fields: [userId], references: [id])
 }
 
 model Board {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   type      String   @default("Kanban")
   color     String   @default("#3B82F6")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  userId    Int
+  userId    String   @db.ObjectId
   user      User     @relation(fields: [userId], references: [id])
   lists     List[]
 }
 
 model List {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   title     String
   position  Int      
-  boardId   Int
+  boardId   String   @db.ObjectId
   board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   cards     Card[]
   createdAt DateTime @default(now())
@@ -68,12 +66,12 @@ model List {
 }
 
 model Card {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
-  description String? @db.Text
+  description String?
   position    Int      
-  listId      Int
-  list        List     @relation(fields:[listId],references:[id],onDelete: Cascade)
+  listId      String   @db.ObjectId
+  list        List     @relation(fields: [listId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -1,6 +1,5 @@
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Filter, Grid3X3, List, Plus, Calendar, Users, Star, Archive, MoreHorizontal, Trash2, Edit3, Copy } from 'lucide-react';
 import Navbar1 from '../components/Navbar1';
 import { useBoards } from '../context/BoardContext';
@@ -9,14 +8,31 @@ const BrowseBoardsPage = () => {
   const navigate = useNavigate();
   const { boards, pagination, createBoard, fetchBoards, deleteBoard, renameBoard } = useBoards();
   
-  const [searchQuery, setSearchQuery] = useState('');
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialSearch = queryParams.get('search') || '';
+
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [filterTemplate, setFilterTemplate] = useState('all');
   const [sortBy, setSortBy] = useState('created');
   const [viewMode, setViewMode] = useState('grid');
   const [selectedBoards, setSelectedBoards] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
 
-
+  // Sync with URL params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const searchParam = params.get('search');
+    
+    if (searchParam !== null && searchParam !== searchQuery) {
+      setSearchQuery(searchParam);
+      fetchBoards(sortBy, 'desc', searchParam, filterTemplate, 1);
+    } else if (searchParam === null && searchQuery !== '') {
+       // Only clear if URL param is explicitly missing but we have a query
+       setSearchQuery('');
+       fetchBoards(sortBy, 'desc', '', filterTemplate, 1);
+    }
+  }, [location.search]);
 
   const handleSortChange = (newSortBy) => {
     setSortBy(newSortBy);

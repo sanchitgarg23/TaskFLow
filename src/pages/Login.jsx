@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API_BASE_URL from '../api';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, CheckCircle } from 'lucide-react';
 import './Login.css'; 
@@ -15,6 +16,7 @@ const Login = () => {
     password: '',
     rememberMe: false,
   });
+  const [socialLoading, setSocialLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -27,7 +29,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
   e.preventDefault();
   try {
-    const res = await fetch("https://taskflow-im15.onrender.com/api/auth/login", {
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
@@ -46,6 +48,27 @@ const Login = () => {
   }
 };
 
+  const handleSocialLogin = (provider) => {
+    setSocialLoading(true);
+    setTimeout(() => {
+      const demoUser = {
+        id: "demo-social-id", // String ID for MongoDB compatibility
+        firstName: "Demo",
+        lastName: "User",
+        email: `demo.${provider.toLowerCase()}@example.com`,
+        subscribeNewsletter: false
+      };
+      
+      localStorage.setItem("token", "demo-social-token");
+      localStorage.setItem("user", JSON.stringify(demoUser));
+      
+      setSocialLoading(false);
+      alert(`Successfully logged in with ${provider}!`);
+      navigate("/homepage");
+      // Refresh boards after short delay to ensure nav completes
+      setTimeout(() => fetchBoards(), 100);
+    }, 1500); // Simulate network delay
+  };
 
   return (
     <>
@@ -149,13 +172,37 @@ const Login = () => {
             </div>
 
             {/* Social Login Buttons */}
+            {/* Social Login Buttons */}
             <div className="social-buttons-grid">
-              <button className="social-button">
-                <span className="social-button-text">Google</span>
+              <button 
+                type="button"
+                onClick={() => handleSocialLogin('Google')}
+                className="social-button"
+                disabled={socialLoading}
+              >
+                {socialLoading ? (
+                  <span className="social-button-text">Loading...</span>
+                ) : (
+                  <>
+                    <span className="social-button-icon">G</span>
+                    <span className="social-button-text">Google</span>
+                  </>
+                )}
               </button>
-              <button className="social-button">
-                
-                <span className="social-button-text">Facebook</span>
+              <button 
+                type="button"
+                onClick={() => handleSocialLogin('Facebook')}
+                className="social-button"
+                disabled={socialLoading}
+              >
+                {socialLoading ? (
+                  <span className="social-button-text">Loading...</span>
+                ) : (
+                  <>
+                    <span className="social-button-icon">f</span>
+                    <span className="social-button-text">Facebook</span>
+                  </>
+                )}
               </button>
             </div>
 

@@ -2,11 +2,11 @@
 
 
 import React, { useState } from 'react';
-import { Search, Plus, User, Home, CheckCircle } from 'lucide-react';
+import { Search, Plus, User, Home, CheckCircle, LogOut, Settings, ChevronDown } from 'lucide-react';
 import TemplateSelector from './TemplateSelector';
 import BoardNameModal from './BoardNameModal';
 import './Navbar1.css'; // Import the CSS file
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Navbar = ({ 
   onCreateBoard, 
@@ -14,9 +14,15 @@ const Navbar = ({
   showHomeButton = false 
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Get user info from localStorage
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const handleTemplateSelect = (template) => {
     setSelectedTemplate(template);
@@ -25,7 +31,7 @@ const Navbar = ({
   };
 
   function hi() {
-    navigate("/homepage")
+    navigate("/homepage");
   }
 
   const handleCreateBoard = (name) => {
@@ -36,9 +42,18 @@ const Navbar = ({
     setSelectedTemplate(null);
   };
 
-  function home() {
-    navigate("/")
-  }
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      // Navigate to boards page with search query
+      navigate(`/boards?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
 
   return (
     <>
@@ -76,8 +91,11 @@ const Navbar = ({
                 </div>
                 <input
                   type="text"
-                  placeholder="Search boards, cards, and more..."
+                  placeholder="Search boards, cards..."
                   className="navbar1-search-input"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearch}
                 />
               </div>
             </div>
@@ -95,9 +113,36 @@ const Navbar = ({
               </button>
 
               {/* Profile Button */}
-              <button className="navbar1-profile-button" onClick={home}>
-                <User className="navbar1-profile-icon" />
-              </button>
+              {/* Profile Dropdown */}
+              <div className="navbar1-profile-container">
+                <button 
+                  className="navbar1-profile-button" 
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                >
+                  <div className="navbar1-profile-avatar">
+                    {user.firstName ? user.firstName[0].toUpperCase() : <User className="navbar1-profile-icon" />}
+                  </div>
+                  <ChevronDown className={`navbar1-chevron ${isProfileOpen ? 'open' : ''}`} />
+                </button>
+
+                {isProfileOpen && (
+                  <div className="navbar1-dropdown-menu">
+                    <div className="navbar1-dropdown-header">
+                      <p className="navbar1-user-name">{user.firstName} {user.lastName}</p>
+                      <p className="navbar1-user-email">{user.email}</p>
+                    </div>
+                    <div className="navbar1-dropdown-divider" />
+                    <button className="navbar1-dropdown-item">
+                      <Settings className="navbar1-dropdown-icon" />
+                      Settings
+                    </button>
+                    <button onClick={handleLogout} className="navbar1-dropdown-item logout">
+                      <LogOut className="navbar1-dropdown-icon" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
