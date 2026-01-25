@@ -2,23 +2,26 @@
 import 'dotenv/config';
 import express from "express";
 import cors from "cors";
-import { PrismaClient } from "@prisma/client";
+import mongoose from "mongoose"; // Changed from PrismaClient
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import authMiddleware from "./middleware/auth.js";
-const prisma = new PrismaClient();
+
+// Import Mongoose Models
+import User from "./models/User.js";
+import Event from "./models/Event.js";
+import Board from "./models/Board.js";
+import List from "./models/List.js";
+import Card from "./models/Card.js";
+
 const app = express();
 
-
-
+// Database Connection
+mongoose.connect(process.env.MONGODB_URL)
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // Middleware
-// app.use(cors());
-// app.use(cors({
-//   origin: ["https://task-flow-one-sandy.vercel.app", "http://localhost:5174", "http://localhost:5173"], // your Vercel frontend URL
-
-// }));
-
 const allowedOrigins = [
   "https://task-flow-one-sandy.vercel.app", // Deployed Frontend
   "http://localhost:5173",                  // Local Dev
@@ -29,9 +32,7 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow Postman, server-to-server (no origin)
       if (!origin) return callback(null, true);
-
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -43,31 +44,22 @@ app.use(
   })
 );
 
-
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Backend working");
+  res.send("Backend working (Mongoose)");
 });
 
 
-// this is for calander
+// --- Calendar Events API ---
 
 app.get("/api/events", async (req, res) => {
   try {
-    const { userId } = req.query; // Get userId from query params
+    const { userId } = req.query;
+    const query = {};
+    if (userId) query.userId = userId;
     
-    const whereClause = {};
-    
-    // Only filter by userId if provided
-    if (userId) {
-      whereClause.userId = userId; // MongoDB uses string IDs
-    }
-    
-    const events = await prisma.event.findMany({
-      where: whereClause
-    });
-    
+    const events = await Event.find(query);
     res.json(events);
   } catch (err) {
     console.error(err);
@@ -75,27 +67,20 @@ app.get("/api/events", async (req, res) => {
   }
 });
 
-
-// to create
 app.post("/api/events", async (req, res) => {
   const { title, description, type, color, startDate, endDate, allDay, userId } = req.body;
-
-  
   try {
-    console.log("Received event data:", JSON.stringify(req.body, null, 2));
-
-    const event = await prisma.event.create({
-      data: {
-        title,
-        description,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        type,
-        color,
-        allDay, 
-        userId // MongoDB uses string IDs
-      },
+    const event = new Event({
+      title,
+      description,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      type,
+      color,
+      allDay,
+      userId
     });
+    await event.save();
     res.status(201).json(event);
   } catch (err) {
     console.error(err);
@@ -103,33 +88,23 @@ app.post("/api/events", async (req, res) => {
   }
 });
 
-// Update event
 app.put("/api/events/:id", async (req, res) => {
   try {
-    console.log("Update request for event:", req.params.id);
-    console.log("Update data:", req.body);
-    
-    const updated = await prisma.event.update({
-      where: { id: req.params.id }, // MongoDB uses string IDs
-      data: req.body,
-    });
-    
-    console.log("Event updated:", updated);
+    const updated = await Event.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true } // Return updated doc
+    );
     res.json(updated);
   } catch (err) {
     console.error("Error updating event:", err.message);
-
-    res.status(400).json({ 
-      error: "Failed to update event",
-
-    });
+    res.status(400).json({ error: "Failed to update event" });
   }
 });
 
-// Delete event
 app.delete("/api/events/:id", async (req, res) => {
   try {
-    await prisma.event.delete({ where: { id: req.params.id } }); // MongoDB uses string IDs
+    await Event.findByIdAndDelete(req.params.id);
     res.json({ message: "Event deleted" });
   } catch (err) {
     console.error(err);
@@ -137,22 +112,11 @@ app.delete("/api/events/:id", async (req, res) => {
   }
 });
 
-// Add this new route after your existing event routes
-
-// Get events by type (for filtering)
 app.get("/api/events/type/:type", async (req, res) => {
   try {
     const { type } = req.params;
-    
-    let events;
-    if (type === 'all') {
-      events = await prisma.event.findMany();
-    } else {
-      events = await prisma.event.findMany({
-        where: { type: type }
-      });
-    }
-    
+    const query = type === 'all' ? {} : { type };
+    const events = await Event.find(query);
     res.json(events);
   } catch (err) {
     console.error(err);
@@ -160,27 +124,13 @@ app.get("/api/events/type/:type", async (req, res) => {
   }
 });
 
-
-// this i made for filtering the events by user and type like deadline , task , etc in calander page.
-// Get events by user and type (if you want user-specific filtering)
 app.get("/api/events/user/:userId/type/:type", async (req, res) => {
   try {
     const { userId, type } = req.params;
+    const query = { userId };
+    if (type !== 'all') query.type = type;
     
-    let events;
-    if (type === 'all') {
-      events = await prisma.event.findMany({
-        where: { userId: userId } // MongoDB uses string IDs
-      });
-    } else {
-      events = await prisma.event.findMany({
-        where: { 
-          userId: userId, // MongoDB uses string IDs
-          type: type 
-        }
-      });
-    }
-    
+    const events = await Event.find(query);
     res.json(events);
   } catch (err) {
     console.error(err);
@@ -188,39 +138,56 @@ app.get("/api/events/user/:userId/type/:type", async (req, res) => {
   }
 });
 
+// Search Events
+app.get("/api/events/search", async (req, res) => {
+  try {
+    const { q, type, userId } = req.query;
+    const query = {};
 
-// signup 
+    if (q && q.trim()) {
+      const regex = new RegExp(q.trim(), 'i'); // Case-insensitive regex
+      query.$or = [{ title: regex }, { description: regex }];
+    }
+
+    if (type && type !== 'all') query.type = type;
+    if (userId) query.userId = userId;
+
+    const events = await Event.find(query).sort({ startDate: 1 });
+    res.json(events);
+  } catch (err) {
+    console.error("Search error:", err);
+    res.status(500).json({ error: "Failed to search events" });
+  }
+});
+
+
+// --- Auth API ---
+
 app.post("/api/auth/signup", async (req, res) => {
   try {
     const { firstName, lastName, email, company, password, subscribeNewsletter } = req.body;
 
-    // Validate required fields
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ error: "Please fill all required fields" });
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({ error: "Email already registered" });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        company: company || "",
-        password: hashedPassword,
-        subscribeNewsletter: subscribeNewsletter || false,
-      },
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      company: company || "",
+      password: hashedPassword,
+      subscribeNewsletter: subscribeNewsletter || false,
     });
+    await user.save();
 
-    // Generate token (uncommented and fixed)
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET || "mysecretkey",
@@ -229,7 +196,7 @@ app.post("/api/auth/signup", async (req, res) => {
 
     res.status(201).json({
       message: "Account created successfully",
-      token: token, // Fixed: now token is properly defined
+      token,
       user: {
         id: user.id,
         email: user.email,
@@ -238,23 +205,19 @@ app.post("/api/auth/signup", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Signup error:", err); 
+    console.error("Signup error:", err);
     res.status(500).json({ error: "Server error during signup" });
   }
 });
 
-
-// login 
-
-
 app.post("/api/auth/login", async (req, res) => {
   try {
-    const {email,password } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password)
-      return res.status(400).json({ error: "Emailand password are required" });
+      return res.status(400).json({ error: "Email and password are required" });
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await User.findOne({ email });
     if (!user)
       return res.status(401).json({ error: "Invalid email or password" });
 
@@ -283,74 +246,30 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// to check the logi and sighup backend working properly
 app.get("/api/protected", authMiddleware, (req, res) => {
   res.json({ message: "You have access!", user: req.user });
 });
 
 
+// --- Board API ---
 
-// now this will be for search in calander page
-app.get("/api/events/search", async (req, res) => {
-  try {
-    const { q, type, userId } = req.query;
-    
-    // Build the where clause
-    const whereClause = {};
-    
-    if (q && q.trim()) {
-      whereClause.OR = [
-        { title: { contains: q.trim(), mode: 'insensitive' } }, // MongoDB supports mode: 'insensitive'
-        { description: { contains: q.trim(), mode: 'insensitive' } }
-      ];
-    }
-    
-    // Add type filter if provided
-    if (type && type !== 'all') {
-      whereClause.type = type;
-    }
-    
-    // Add user filter if provided
-    if (userId) {
-      whereClause.userId = userId; // MongoDB uses string IDs
-    }
-    
-    const events = await prisma.event.findMany({
-      where: whereClause,
-      orderBy: { startDate: 'asc' }
-    });
-    
-    res.json(events);
-  } catch (err) {
-    console.error("Search error:", err);
-    res.status(500).json({ error: "Failed to search events" });
-  }
-});
-
-
-
-
-// Create a new board
+// Create Board
 app.post("/api/boards", async (req, res) => {
   try {
-    const { name, type,color, userId } = req.body;
+    const { name, type, color, userId } = req.body;
 
     if (!name || !userId) {
       return res.status(400).json({ error: "Name and userId are required" });
     }
 
-
-    const board = await prisma.board.create({
-      data: {
-        name,
-        type: type || "Kanban",
-        color: color || "#3B82F6",
-        userId: userId, // MongoDB uses string IDs
-      },
+    const board = new Board({
+      name,
+      type: type || "Kanban",
+      color: color || "#3B82F6",
+      userId
     });
+    await board.save();
 
-    
-    // Define default lists for each template type
     const templateLists = {
       "Kanban Board": ["To Do", "In Progress", "Done"],
       "Kanban": ["To Do", "In Progress", "Done"],
@@ -364,32 +283,21 @@ app.post("/api/boards", async (req, res) => {
     const listsToCreate = templateLists[board.type] || templateLists["Kanban Board"];
 
     if (listsToCreate) {
-      // MongoDB doesn't support createMany in the same way, so we create individually
       for (let i = 0; i < listsToCreate.length; i++) {
-        await prisma.list.create({
-          data: {
-            title: listsToCreate[i],
-            position: i,
-            boardId: board.id
-          }
-        });
+        await new List({
+          title: listsToCreate[i],
+          position: i,
+          boardId: board.id
+        }).save();
       }
     }
 
-    // Fetch the board again to include list
-    const newBoard = await prisma.board.findUnique({
-      where: { id: board.id },
-      include: {
-        lists: {
-          orderBy: { position: "asc" },
-          include: {
-            cards: {
-              orderBy: { position: "asc" },
-            },
-          },
-        },
-      },
-    });
+    // Populate lists and cards
+    const newBoard = await Board.findById(board.id)
+      .populate({
+        path: 'lists',
+        populate: { path: 'cards' }
+      });
 
     res.status(201).json(newBoard);
   } catch (err) {
@@ -398,7 +306,7 @@ app.post("/api/boards", async (req, res) => {
   }
 });
 
-// Get all boards for a user with sorting, search, filtering, and pagination
+// Get all boards
 app.get("/api/boards", async (req, res) => {
   try {
     const { 
@@ -415,69 +323,37 @@ app.get("/api/boards", async (req, res) => {
       return res.status(400).json({ error: "userId is required" });
     }
 
-    // Convert page and limit to integers
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
-    // Build where clause
-    const whereClause = {
-      userId: userId // MongoDB uses string IDs
-    };
+    const query = { userId };
 
-    // Add search filter if provided
     if (search && search.trim()) {
-      whereClause.name = {
-        contains: search.trim(),
-        mode: 'insensitive' // MongoDB supports case-insensitive search
-      };
+      query.name = new RegExp(search.trim(), 'i');
     }
 
-    // Add template filter if provided
     if (filterTemplate && filterTemplate !== 'all') {
-      whereClause.type = filterTemplate;
+      query.type = filterTemplate;
     }
 
-    // Determine the orderBy clause based on sortBy parameter
-    let orderByClause;
-    switch (sortBy) {
-      case 'name':
-        orderByClause = { name: order };
-        break;
-      case 'created':
-        orderByClause = { createdAt: order };
-        break;
-      case 'updated':
-        orderByClause = { updatedAt: order };
-        break;
-      default:
-        orderByClause = { createdAt: 'desc' };
-    }
+    const sortOptions = {};
+    const sortOrder = order === 'desc' ? -1 : 1;
+    if (sortBy === 'name') sortOptions.name = sortOrder;
+    else if (sortBy === 'updated') sortOptions.updatedAt = sortOrder;
+    else sortOptions.createdAt = sortOrder;
 
-    // Get total count for pagination
-    const totalCount = await prisma.board.count({
-      where: whereClause
-    });
+    const totalCount = await Board.countDocuments(query);
 
-    // Get paginated boards
-    const boards = await prisma.board.findMany({
-      where: whereClause,
-      include: {
-        lists: {
-          orderBy: { position: "asc" },
-          include: {
-            cards: {
-              orderBy: { position: "asc" },
-            },
-          },
-        },
-      },
-      orderBy: orderByClause,
-      skip: skip,
-      take: limitNum,
-    });
+    const boards = await Board.find(query)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limitNum)
+      .populate({
+        path: 'lists',
+        populate: { path: 'cards' }
+      });
 
-    // Return boards with pagination 
     res.json({
       boards,
       pagination: {
@@ -495,29 +371,18 @@ app.get("/api/boards", async (req, res) => {
   }
 });
 
-// Get a specific board
+// Get specific board
 app.get("/api/boards/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const board = await prisma.board.findUnique({
-      where: { id: id }, // MongoDB uses string IDs
-      include: {
-        lists: {
-          orderBy: { position: "asc" },
-          include: {
-            cards: {
-              orderBy: { position: "asc" },
-            },
-          },
-        },
-      },
-    });
+    const board = await Board.findById(req.params.id)
+      .populate({
+        path: 'lists',
+        populate: { path: 'cards' }
+      });
 
     if (!board) {
       return res.status(404).json({ error: "Board not found" });
     }
-
     res.json(board);
   } catch (err) {
     console.error("Error fetching board:", err);
@@ -525,29 +390,17 @@ app.get("/api/boards/:id", async (req, res) => {
   }
 });
 
-
-
-// Update board 
+// Update Board
 app.put("/api/boards/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, type, color } = req.body;
-
-    const updatedBoard = await prisma.board.update({
-      where: { id: id }, // MongoDB uses string IDs
-      data: {
-        ...(name && { name }),
-        ...(type && { type }),
-        ...(color && { color }),
-      },
-      include: {
-        lists: {
-          orderBy: { position: "asc" },
-          include: { cards: { orderBy: { position: "asc" } } },
-        },
-      },
+    const updatedBoard = await Board.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    ).populate({
+      path: 'lists',
+      populate: { path: 'cards' }
     });
-
     res.json(updatedBoard);
   } catch (err) {
     console.error("Error updating board:", err);
@@ -555,11 +408,25 @@ app.put("/api/boards/:id", async (req, res) => {
   }
 });
 
-// Delete board (cascade removes lists/cards via Prisma schema)
+// Delete Board (and cascade children)
+// Note: Mongoose middleware usually better for cascade, but doing manually for simplicity
 app.delete("/api/boards/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    await prisma.board.delete({ where: { id: id } }); // MongoDB uses string IDs
+    const boardId = req.params.id;
+    
+    // Find all lists for this board
+    const lists = await List.find({ boardId });
+    const listIds = lists.map(l => l._id);
+    
+    // Delete all cards in these lists
+    await Card.deleteMany({ listId: { $in: listIds } });
+    
+    // Delete lists
+    await List.deleteMany({ boardId });
+    
+    // Delete board
+    await Board.findByIdAndDelete(boardId);
+    
     res.json({ message: "Board deleted successfully" });
   } catch (err) {
     console.error("Error deleting board:", err);
@@ -568,46 +435,39 @@ app.delete("/api/boards/:id", async (req, res) => {
 });
 
 
+// --- List API ---
 
-// Create list
 app.post("/api/boards/:boardId/lists", async (req, res) => {
   try {
-    const { boardId } = req.params;
     const { title, position = 0 } = req.body;
-
     if (!title) return res.status(400).json({ error: "Title is required" });
 
-    const list = await prisma.list.create({
-      data: {
-        title,
-        position,
-        boardId: boardId, // MongoDB uses string IDs
-      },
-      include: { cards: true },
+    const list = new List({
+      title,
+      position,
+      boardId: req.params.boardId
     });
-
-    res.status(201).json(list);
+    await list.save();
+    
+    // Manual populate not strictly needed for just created list but keeping consistent return structure
+    // Since it's new, it has no cards yet.
+    const populatedList = list.toJSON(); 
+    populatedList.cards = []; 
+    
+    res.status(201).json(populatedList);
   } catch (err) {
     console.error("Error creating list:", err);
     res.status(500).json({ error: "Failed to create list" });
   }
 });
 
-// Update list
 app.put("/api/lists/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const { title, position } = req.body;
-
-    const list = await prisma.list.update({
-      where: { id: id }, // MongoDB uses string IDs
-      data: {
-        ...(title && { title }),
-        ...(position !== undefined && { position }),
-      },
-      include: { cards: true },
-    });
-
+    const list = await List.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    ).populate('cards'); // Mongoose virtual population
     res.json(list);
   } catch (err) {
     console.error("Error updating list:", err);
@@ -615,11 +475,11 @@ app.put("/api/lists/:id", async (req, res) => {
   }
 });
 
-// Delete list
 app.delete("/api/lists/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    await prisma.list.delete({ where: { id: id } }); // MongoDB uses string IDs
+    // Delete associated cards first
+    await Card.deleteMany({ listId: req.params.id });
+    await List.findByIdAndDelete(req.params.id);
     res.json({ message: "List deleted successfully" });
   } catch (err) {
     console.error("Error deleting list:", err);
@@ -628,24 +488,20 @@ app.delete("/api/lists/:id", async (req, res) => {
 });
 
 
+// --- Card API ---
 
-// Create card
 app.post("/api/lists/:listId/cards", async (req, res) => {
   try {
-    const { listId } = req.params;
     const { title, description = "", position = 0 } = req.body;
-
     if (!title) return res.status(400).json({ error: "Title is required" });
 
-    const card = await prisma.card.create({
-      data: {
-        title,
-        description,
-        position,
-        listId: listId, // MongoDB uses string IDs
-      },
+    const card = new Card({
+      title,
+      description,
+      position,
+      listId: req.params.listId
     });
-
+    await card.save();
     res.status(201).json(card);
   } catch (err) {
     console.error("Error creating card:", err);
@@ -653,22 +509,13 @@ app.post("/api/lists/:listId/cards", async (req, res) => {
   }
 });
 
-// Update card
 app.put("/api/cards/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const { title, description, position, listId } = req.body;
-
-    const card = await prisma.card.update({
-      where: { id: id }, // MongoDB uses string IDs
-      data: {
-        ...(title && { title }),
-        ...(description !== undefined && { description }),
-        ...(position !== undefined && { position }),
-        ...(listId && { listId: listId }), // MongoDB uses string IDs
-      },
-    });
-
+    const card = await Card.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
     res.json(card);
   } catch (err) {
     console.error("Error updating card:", err);
@@ -676,11 +523,9 @@ app.put("/api/cards/:id", async (req, res) => {
   }
 });
 
-// Delete card
 app.delete("/api/cards/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    await prisma.card.delete({ where: { id: id } }); // MongoDB uses string IDs
+    await Card.findByIdAndDelete(req.params.id);
     res.json({ message: "Card deleted successfully" });
   } catch (err) {
     console.error("Error deleting card:", err);
@@ -688,16 +533,9 @@ app.delete("/api/cards/:id", async (req, res) => {
   }
 });
 
-// Get all cards for a list
 app.get("/api/lists/:listId/cards", async (req, res) => {
   try {
-    const { listId } = req.params;
-
-    const cards = await prisma.card.findMany({
-      where: { listId: listId }, // MongoDB uses string IDs
-      orderBy: { position: "asc" },
-    });
-
+    const cards = await Card.find({ listId: req.params.listId }).sort({ position: 1 });
     res.json(cards);
   } catch (err) {
     console.error("Error fetching cards:", err);
@@ -705,31 +543,17 @@ app.get("/api/lists/:listId/cards", async (req, res) => {
   }
 });
 
-// Get a specific card
 app.get("/api/cards/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const card = await prisma.card.findUnique({
-      where: { id: id }, // MongoDB uses string IDs
-    });
-
-    if (!card) {
-      return res.status(404).json({ error: "Card not found" });
-    }
-
+    const card = await Card.findById(req.params.id);
+    if (!card) return res.status(404).json({ error: "Card not found" });
     res.json(card);
   } catch (err) {
     console.error("Error fetching card:", err);
     res.status(500).json({ error: "Failed to fetch card" });
   }
-});   
-
-
+});
 
 
 const PORT = 5001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-
-// module.exports = {app, prisma};
-

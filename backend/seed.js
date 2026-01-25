@@ -1,36 +1,43 @@
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import mongoose from 'mongoose';
+import User from './models/User.js';
+import Event from './models/Event.js';
+import Board from './models/Board.js';
+import List from './models/List.js';
+import Card from './models/Card.js';
+import 'dotenv/config';
 
 async function seed() {
   console.log('Starting seed...');
 
-  // Clear existing data (in reverse order of dependencies)
-  await prisma.card.deleteMany();
-  await prisma.list.deleteMany();
-  await prisma.board.deleteMany();
-  await prisma.event.deleteMany();
-  await prisma.user.deleteMany();
+  try {
+    await mongoose.connect(process.env.MONGODB_URL);
+    console.log('Connected to MongoDB');
 
-  console.log('Cleared existing data');
+    // Clear existing data (in reverse order of dependencies)
+    await Card.deleteMany({});
+    await List.deleteMany({});
+    await Board.deleteMany({});
+    await Event.deleteMany({});
+    await User.deleteMany({});
 
-  // Create a test user
-  const user = await prisma.user.create({
-    data: {
+    console.log('Cleared existing data');
+
+    // Create a test user
+    const user = new User({
       firstName: "Test",
       lastName: "User",
       email: "test@example.com",
       password: "$2a$10$somehashedpassword", // You should hash this properly
       company: "Test Company",
       subscribeNewsletter: false,
-    },
-  });
+    });
+    await user.save();
 
-  console.log('Created user:', user.id);
+    console.log('Created user:', user.id);
 
-  // Seed events
-  const events = await prisma.event.createMany({
-    data: [
+    // Seed events
+    const eventsData = [
       {
         title: "Meeting with Team",
         description: "Discuss project milestones",
@@ -48,81 +55,68 @@ async function seed() {
         color: "#33FF57",
         startDate: new Date("2024-07-02T15:00:00Z"),
         endDate: new Date("2024-07-02T16:00:00Z"),
-        allDay: false,
+        allDay: true,
         userId: user.id,
       }
-    ]
-  });
+    ];
 
-  console.log('Created events');
+    for (const eventData of eventsData) {
+        await new Event(eventData).save();
+    }
 
-  // Create a sample board
-  const board = await prisma.board.create({
-    data: {
+    console.log('Created events');
+
+    // Create a sample board
+    const board = new Board({
       name: "My First Board",
       type: "Kanban",
       color: "#3B82F6",
       userId: user.id,
-    },
-  });
+    });
+    await board.save();
 
-  console.log('Created board:', board.id);
+    console.log('Created board:', board.id);
 
-  // Create lists for the board
-  const todoList = await prisma.list.create({
-    data: {
-      title: "To Do",
-      position: 0,
-      boardId: board.id,
-    },
-  });
+    // Create lists for the board
+    const listTitles = ["To Do", "In Progress", "Done"];
+    const lists = [];
 
-  const inProgressList = await prisma.list.create({
-    data: {
-      title: "In Progress",
-      position: 1,
-      boardId: board.id,
-    },
-  });
+    for (let i = 0; i < listTitles.length; i++) {
+        const list = new List({
+            title: listTitles[i],
+            position: i,
+            boardId: board.id,
+        });
+        await list.save();
+        lists.push(list);
+    }
 
-  const doneList = await prisma.list.create({
-    data: {
-      title: "Done",
-      position: 2,
-      boardId: board.id,
-    },
-  });
+    console.log('Created lists');
 
-  console.log('Created lists');
-
-  // Create sample cards
-  await prisma.card.create({
-    data: {
+    // Create sample cards for first list
+    await new Card({
       title: "Sample Task 1",
       description: "This is a sample task",
       position: 0,
-      listId: todoList.id,
-    },
-  });
+      listId: lists[0].id,
+    }).save();
 
-  await prisma.card.create({
-    data: {
+    await new Card({
       title: "Sample Task 2",
       description: "Another sample task",
       position: 1,
-      listId: todoList.id,
-    },
-  });
+      listId: lists[0].id,
+    }).save();
 
-  console.log('Created cards');
-  console.log('Seed completed successfully!');
+    console.log('Created cards');
+    console.log('Seed completed successfully!');
+
+  } catch (error) {
+    console.error('Seed error:', error);
+    process.exit(1);
+  } finally {
+    await mongoose.disconnect();
+  }
 }
 
-seed()
-  .catch((e) => {
-    console.error('Seed error:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+seed();
