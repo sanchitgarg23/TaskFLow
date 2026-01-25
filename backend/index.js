@@ -30,18 +30,7 @@ const allowedOrigins = [
 ];
 
 app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.log(" CORS Blocked Origin:", origin);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  })
+  cors()
 );
 
 app.use(express.json());
